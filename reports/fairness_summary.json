@@ -1,0 +1,2009 @@
+{
+  "train": [
+    "2013B",
+    "2013J",
+    "2014B"
+  ],
+  "test": [
+    "2014J"
+  ],
+  "weeks": [
+    2,
+    4,
+    8,
+    12
+  ],
+  "models": [
+    "lr_main",
+    "gbm",
+    "lr_with_demographics"
+  ],
+  "settings": {
+    "n_boot": 1000,
+    "seed": 0,
+    "list": "top 20% of each module presentation",
+    "min_n": 100,
+    "min_at_risk": 30,
+    "recall_ratio_limits": [
+      0.8,
+      1.25
+    ],
+    "calibration_gap_limit": 0.05,
+    "gbm_alias": "challenger"
+  },
+  "flag_counts": {
+    "2": {
+      "lr_main": {
+        "groups_audited": 44,
+        "flagged": 29,
+        "recall_gap": 0,
+        "calibration": 29
+      },
+      "gbm": {
+        "groups_audited": 44,
+        "flagged": 27,
+        "recall_gap": 1,
+        "calibration": 26
+      },
+      "lr_with_demographics": {
+        "groups_audited": 44,
+        "flagged": 38,
+        "recall_gap": 24,
+        "calibration": 27
+      }
+    },
+    "4": {
+      "lr_main": {
+        "groups_audited": 44,
+        "flagged": 14,
+        "recall_gap": 3,
+        "calibration": 14
+      },
+      "gbm": {
+        "groups_audited": 44,
+        "flagged": 19,
+        "recall_gap": 2,
+        "calibration": 19
+      },
+      "lr_with_demographics": {
+        "groups_audited": 44,
+        "flagged": 22,
+        "recall_gap": 17,
+        "calibration": 7
+      }
+    },
+    "8": {
+      "lr_main": {
+        "groups_audited": 44,
+        "flagged": 7,
+        "recall_gap": 4,
+        "calibration": 3
+      },
+      "gbm": {
+        "groups_audited": 44,
+        "flagged": 14,
+        "recall_gap": 5,
+        "calibration": 11
+      },
+      "lr_with_demographics": {
+        "groups_audited": 44,
+        "flagged": 13,
+        "recall_gap": 13,
+        "calibration": 0
+      }
+    },
+    "12": {
+      "lr_main": {
+        "groups_audited": 44,
+        "flagged": 14,
+        "recall_gap": 3,
+        "calibration": 12
+      },
+      "gbm": {
+        "groups_audited": 44,
+        "flagged": 9,
+        "recall_gap": 5,
+        "calibration": 4
+      },
+      "lr_with_demographics": {
+        "groups_audited": 44,
+        "flagged": 22,
+        "recall_gap": 12,
+        "calibration": 10
+      }
+    }
+  },
+  "by_week": {
+    "2": {
+      "lr_main": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.3092,
+          "recall_max": 0.3092,
+          "lowest_recall_group": "All students",
+          "flagged": [
+            {
+              "group": "All students",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.2849,
+          "recall_max": 0.3251,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            },
+            {
+              "group": "M",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.2781,
+          "recall_max": 0.3227,
+          "lowest_recall_group": "35-55",
+          "flagged": [
+            {
+              "group": "0-35",
+              "flag": "calibration"
+            },
+            {
+              "group": "35-55",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.2585,
+          "recall_max": 0.3438,
+          "lowest_recall_group": "East Anglian Region",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "East Midlands Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Ireland",
+              "flag": "calibration"
+            },
+            {
+              "group": "London Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "North Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South East Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South West Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.2781,
+          "recall_max": 0.3636,
+          "lowest_recall_group": "HE Qualification",
+          "flagged": [
+            {
+              "group": "A Level or Equivalent",
+              "flag": "calibration"
+            },
+            {
+              "group": "HE Qualification",
+              "flag": "calibration"
+            },
+            {
+              "group": "Post Graduate Qualification",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "20-30%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2721,
+          "recall_max": 0.342,
+          "lowest_recall_group": "80-90%",
+          "flagged": [
+            {
+              "group": "30-40%",
+              "flag": "calibration"
+            },
+            {
+              "group": "40-50%",
+              "flag": "calibration"
+            },
+            {
+              "group": "50-60%",
+              "flag": "calibration"
+            },
+            {
+              "group": "60-70%",
+              "flag": "calibration"
+            },
+            {
+              "group": "70-80%",
+              "flag": "calibration"
+            },
+            {
+              "group": "80-90%",
+              "flag": "calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "Unknown",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3068,
+          "recall_max": 0.3269,
+          "lowest_recall_group": "N",
+          "flagged": [
+            {
+              "group": "N",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.3042,
+          "recall_max": 0.3584,
+          "lowest_recall_group": "disability N, IMD 30-70%",
+          "flagged": [
+            {
+              "group": "disability N, IMD 30-70%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD 70-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "calibration"
+            }
+          ]
+        }
+      },
+      "gbm": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.3164,
+          "recall_max": 0.3164,
+          "lowest_recall_group": "All students",
+          "flagged": [
+            {
+              "group": "All students",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.2881,
+          "recall_max": 0.3349,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.2708,
+          "recall_max": 0.3365,
+          "lowest_recall_group": "35-55",
+          "flagged": [
+            {
+              "group": "0-35",
+              "flag": "calibration"
+            },
+            {
+              "group": "35-55",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.2687,
+          "recall_max": 0.3855,
+          "lowest_recall_group": "North Region",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "East Midlands Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Ireland",
+              "flag": "calibration"
+            },
+            {
+              "group": "North Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South East Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South West Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.2707,
+          "recall_max": 0.3636,
+          "lowest_recall_group": "HE Qualification",
+          "flagged": [
+            {
+              "group": "A Level or Equivalent",
+              "flag": "calibration"
+            },
+            {
+              "group": "HE Qualification",
+              "flag": "calibration"
+            },
+            {
+              "group": "Post Graduate Qualification",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "20-30%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2661,
+          "recall_max": 0.3438,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "40-50%",
+              "flag": "calibration"
+            },
+            {
+              "group": "50-60%",
+              "flag": "calibration"
+            },
+            {
+              "group": "60-70%",
+              "flag": "calibration"
+            },
+            {
+              "group": "70-80%",
+              "flag": "calibration"
+            },
+            {
+              "group": "80-90%",
+              "flag": "calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "Unknown",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.313,
+          "recall_max": 0.3419,
+          "lowest_recall_group": "N",
+          "flagged": [
+            {
+              "group": "N",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.2718,
+          "recall_max": 0.3931,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD 30-70%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD 70-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability Y, IMD 30-70%",
+              "flag": "recall gap"
+            }
+          ]
+        }
+      },
+      "lr_with_demographics": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.3229,
+          "recall_max": 0.3229,
+          "lowest_recall_group": "All students",
+          "flagged": [
+            {
+              "group": "All students",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.2907,
+          "recall_max": 0.3438,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            },
+            {
+              "group": "M",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.2626,
+          "recall_max": 0.3495,
+          "lowest_recall_group": "35-55",
+          "flagged": [
+            {
+              "group": "0-35",
+              "flag": "calibration"
+            },
+            {
+              "group": "35-55",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.2025,
+          "recall_max": 0.4972,
+          "lowest_recall_group": "South East Region",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "East Midlands Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Ireland",
+              "flag": "calibration"
+            },
+            {
+              "group": "London Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "North Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "North Western Region",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "South East Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "South Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Wales",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "West Midlands Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.0606,
+          "recall_max": 0.462,
+          "lowest_recall_group": "Post Graduate Qualification",
+          "flagged": [
+            {
+              "group": "A Level or Equivalent",
+              "flag": "calibration"
+            },
+            {
+              "group": "HE Qualification",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "Lower Than A Level",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "Post Graduate Qualification",
+              "flag": "recall gap; calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "20-30%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.0459,
+          "recall_max": 0.5012,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "0-10%",
+              "flag": "calibration"
+            },
+            {
+              "group": "10-20",
+              "flag": "calibration"
+            },
+            {
+              "group": "20-30%",
+              "flag": "calibration"
+            },
+            {
+              "group": "30-40%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "40-50%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "50-60%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "60-70%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "70-80%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "80-90%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3022,
+          "recall_max": 0.4753,
+          "lowest_recall_group": "N",
+          "flagged": [
+            {
+              "group": "N",
+              "flag": "calibration"
+            },
+            {
+              "group": "Y",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.0485,
+          "recall_max": 0.5913,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD 0-30%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "disability N, IMD 30-70%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD 70-100%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 30-70%",
+              "flag": "recall gap"
+            }
+          ]
+        }
+      }
+    },
+    "4": {
+      "lr_main": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.355,
+          "recall_max": 0.355,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3121,
+          "recall_max": 0.3832,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3183,
+          "recall_max": 0.3704,
+          "lowest_recall_group": "35-55",
+          "flagged": []
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.2926,
+          "recall_max": 0.3993,
+          "lowest_recall_group": "South East Region",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "North Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.1935,
+          "recall_max": 0.3682,
+          "lowest_recall_group": "Post Graduate Qualification",
+          "flagged": [
+            {
+              "group": "A Level or Equivalent",
+              "flag": "calibration"
+            },
+            {
+              "group": "HE Qualification",
+              "flag": "calibration"
+            },
+            {
+              "group": "Post Graduate Qualification",
+              "flag": "recall gap; calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2667,
+          "recall_max": 0.3925,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "80-90%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap; calibration"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3502,
+          "recall_max": 0.3902,
+          "lowest_recall_group": "N",
+          "flagged": []
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.2828,
+          "recall_max": 0.426,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD 70-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "calibration"
+            }
+          ]
+        }
+      },
+      "gbm": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.3619,
+          "recall_max": 0.3619,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3195,
+          "recall_max": 0.3898,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3202,
+          "recall_max": 0.3786,
+          "lowest_recall_group": "35-55",
+          "flagged": []
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.3231,
+          "recall_max": 0.3964,
+          "lowest_recall_group": "South East Region",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "North Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South East Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.2258,
+          "recall_max": 0.3806,
+          "lowest_recall_group": "Post Graduate Qualification",
+          "flagged": [
+            {
+              "group": "A Level or Equivalent",
+              "flag": "calibration"
+            },
+            {
+              "group": "HE Qualification",
+              "flag": "calibration"
+            },
+            {
+              "group": "Post Graduate Qualification",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2571,
+          "recall_max": 0.3978,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "40-50%",
+              "flag": "calibration"
+            },
+            {
+              "group": "60-70%",
+              "flag": "calibration"
+            },
+            {
+              "group": "70-80%",
+              "flag": "calibration"
+            },
+            {
+              "group": "80-90%",
+              "flag": "calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap; calibration"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3604,
+          "recall_max": 0.3725,
+          "lowest_recall_group": "N",
+          "flagged": []
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.2727,
+          "recall_max": 0.3846,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD 30-70%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD 70-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "calibration"
+            }
+          ]
+        }
+      },
+      "lr_with_demographics": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.3592,
+          "recall_max": 0.3592,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3161,
+          "recall_max": 0.3876,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.291,
+          "recall_max": 0.3887,
+          "lowest_recall_group": "35-55",
+          "flagged": [
+            {
+              "group": "35-55",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.2576,
+          "recall_max": 0.4767,
+          "lowest_recall_group": "South East Region",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "East Midlands Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Ireland",
+              "flag": "recall gap"
+            },
+            {
+              "group": "North Western Region",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "South East Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.129,
+          "recall_max": 0.452,
+          "lowest_recall_group": "Post Graduate Qualification",
+          "flagged": [
+            {
+              "group": "HE Qualification",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Lower Than A Level",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Post Graduate Qualification",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.1333,
+          "recall_max": 0.4452,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "20-30%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "60-70%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "80-90%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3438,
+          "recall_max": 0.4723,
+          "lowest_recall_group": "N",
+          "flagged": [
+            {
+              "group": "Y",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.1414,
+          "recall_max": 0.5253,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD 0-30%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 30-70%",
+              "flag": "recall gap"
+            }
+          ]
+        }
+      }
+    },
+    "8": {
+      "lr_main": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.4135,
+          "recall_max": 0.4135,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.3895,
+          "recall_max": 0.4295,
+          "lowest_recall_group": "F",
+          "flagged": []
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3698,
+          "recall_max": 0.4333,
+          "lowest_recall_group": "35-55",
+          "flagged": []
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.3576,
+          "recall_max": 0.4684,
+          "lowest_recall_group": "East Anglian Region",
+          "flagged": [
+            {
+              "group": "South East Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.2667,
+          "recall_max": 0.4295,
+          "lowest_recall_group": "Post Graduate Qualification",
+          "flagged": [
+            {
+              "group": "HE Qualification",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2959,
+          "recall_max": 0.4635,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "90-100%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.408,
+          "recall_max": 0.4545,
+          "lowest_recall_group": "N",
+          "flagged": []
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.2935,
+          "recall_max": 0.4867,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "calibration"
+            }
+          ]
+        }
+      },
+      "gbm": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.4155,
+          "recall_max": 0.4155,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.388,
+          "recall_max": 0.4339,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3678,
+          "recall_max": 0.4366,
+          "lowest_recall_group": "35-55",
+          "flagged": []
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.3267,
+          "recall_max": 0.4779,
+          "lowest_recall_group": "Ireland",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "Ireland",
+              "flag": "recall gap"
+            },
+            {
+              "group": "South East Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.3,
+          "recall_max": 0.4302,
+          "lowest_recall_group": "Post Graduate Qualification",
+          "flagged": [
+            {
+              "group": "A Level or Equivalent",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2755,
+          "recall_max": 0.4685,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "40-50%",
+              "flag": "calibration"
+            },
+            {
+              "group": "80-90%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4086,
+          "recall_max": 0.4668,
+          "lowest_recall_group": "N",
+          "flagged": []
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.2717,
+          "recall_max": 0.4973,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD 70-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "calibration"
+            }
+          ]
+        }
+      },
+      "lr_with_demographics": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.417,
+          "recall_max": 0.417,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.388,
+          "recall_max": 0.4363,
+          "lowest_recall_group": "F",
+          "flagged": []
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3564,
+          "recall_max": 0.4436,
+          "lowest_recall_group": "35-55",
+          "flagged": []
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.3299,
+          "recall_max": 0.5216,
+          "lowest_recall_group": "South East Region",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Ireland",
+              "flag": "recall gap"
+            },
+            {
+              "group": "North Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "South East Region",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 1,
+          "recall_min": 0.2333,
+          "recall_max": 0.4875,
+          "lowest_recall_group": "Post Graduate Qualification",
+          "flagged": [
+            {
+              "group": "HE Qualification",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Lower Than A Level",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.1939,
+          "recall_max": 0.5113,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "60-70%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "90-100%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4046,
+          "recall_max": 0.5086,
+          "lowest_recall_group": "N",
+          "flagged": [
+            {
+              "group": "Y",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.1957,
+          "recall_max": 0.5792,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 30-70%",
+              "flag": "recall gap"
+            }
+          ]
+        }
+      }
+    },
+    "12": {
+      "lr_main": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.4496,
+          "recall_max": 0.4496,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4132,
+          "recall_max": 0.4742,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3907,
+          "recall_max": 0.4738,
+          "lowest_recall_group": "35-55",
+          "flagged": []
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.3786,
+          "recall_max": 0.5185,
+          "lowest_recall_group": "Ireland",
+          "flagged": [
+            {
+              "group": "East Anglian Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South East Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 2,
+          "recall_min": 0.3958,
+          "recall_max": 0.4586,
+          "lowest_recall_group": "HE Qualification",
+          "flagged": [
+            {
+              "group": "A Level or Equivalent",
+              "flag": "calibration"
+            },
+            {
+              "group": "HE Qualification",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.3187,
+          "recall_max": 0.496,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "30-40%",
+              "flag": "calibration"
+            },
+            {
+              "group": "40-50%",
+              "flag": "calibration"
+            },
+            {
+              "group": "80-90%",
+              "flag": "calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "recall gap; calibration"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4398,
+          "recall_max": 0.5233,
+          "lowest_recall_group": "N",
+          "flagged": []
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.3256,
+          "recall_max": 0.6038,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD 70-100%",
+              "flag": "calibration"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "recall gap"
+            }
+          ]
+        }
+      },
+      "gbm": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.4454,
+          "recall_max": 0.4454,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4037,
+          "recall_max": 0.4736,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3838,
+          "recall_max": 0.4706,
+          "lowest_recall_group": "35-55",
+          "flagged": []
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.3857,
+          "recall_max": 0.5407,
+          "lowest_recall_group": "Ireland",
+          "flagged": [
+            {
+              "group": "South East Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 2,
+          "recall_min": 0.3819,
+          "recall_max": 0.4645,
+          "lowest_recall_group": "HE Qualification",
+          "flagged": []
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2857,
+          "recall_max": 0.5112,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "60-70%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "90-100%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4362,
+          "recall_max": 0.5151,
+          "lowest_recall_group": "N",
+          "flagged": []
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.2907,
+          "recall_max": 0.5912,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "recall gap"
+            }
+          ]
+        }
+      },
+      "lr_with_demographics": {
+        "all": {
+          "reference": "All students",
+          "groups": 1,
+          "small_groups": 0,
+          "recall_min": 0.4518,
+          "recall_max": 0.4518,
+          "lowest_recall_group": "All students",
+          "flagged": []
+        },
+        "gender": {
+          "reference": "M",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4244,
+          "recall_max": 0.4704,
+          "lowest_recall_group": "F",
+          "flagged": [
+            {
+              "group": "F",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "age_band": {
+          "reference": "0-35",
+          "groups": 3,
+          "small_groups": 1,
+          "recall_min": 0.3759,
+          "recall_max": 0.4842,
+          "lowest_recall_group": "35-55",
+          "flagged": [
+            {
+              "group": "35-55",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "region": {
+          "reference": "Scotland",
+          "groups": 13,
+          "small_groups": 0,
+          "recall_min": 0.3687,
+          "recall_max": 0.5593,
+          "lowest_recall_group": "South East Region",
+          "flagged": [
+            {
+              "group": "East Midlands Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "Ireland",
+              "flag": "recall gap"
+            },
+            {
+              "group": "North Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "North Western Region",
+              "flag": "calibration"
+            },
+            {
+              "group": "South East Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "South Region",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Wales",
+              "flag": "calibration"
+            },
+            {
+              "group": "Yorkshire Region",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "highest_education": {
+          "reference": "A Level or Equivalent",
+          "groups": 5,
+          "small_groups": 2,
+          "recall_min": 0.3542,
+          "recall_max": 0.5126,
+          "lowest_recall_group": "HE Qualification",
+          "flagged": [
+            {
+              "group": "Lower Than A Level",
+              "flag": "calibration"
+            }
+          ]
+        },
+        "imd_band": {
+          "reference": "30-40%",
+          "groups": 11,
+          "small_groups": 0,
+          "recall_min": 0.2308,
+          "recall_max": 0.5279,
+          "lowest_recall_group": "Unknown",
+          "flagged": [
+            {
+              "group": "0-10%",
+              "flag": "calibration"
+            },
+            {
+              "group": "10-20",
+              "flag": "calibration"
+            },
+            {
+              "group": "40-50%",
+              "flag": "calibration"
+            },
+            {
+              "group": "60-70%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "80-90%",
+              "flag": "calibration"
+            },
+            {
+              "group": "90-100%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "Unknown",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability": {
+          "reference": "N",
+          "groups": 2,
+          "small_groups": 0,
+          "recall_min": 0.4362,
+          "recall_max": 0.5699,
+          "lowest_recall_group": "N",
+          "flagged": [
+            {
+              "group": "Y",
+              "flag": "recall gap"
+            }
+          ]
+        },
+        "disability_x_imd": {
+          "reference": "disability N, IMD 30-70%",
+          "groups": 8,
+          "small_groups": 1,
+          "recall_min": 0.2442,
+          "recall_max": 0.6855,
+          "lowest_recall_group": "disability N, IMD Unknown",
+          "flagged": [
+            {
+              "group": "disability N, IMD Unknown",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 0-30%",
+              "flag": "recall gap"
+            },
+            {
+              "group": "disability Y, IMD 30-70%",
+              "flag": "recall gap"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "train": [
+    "2013B",
+    "2013J",
+    "2014B"
+  ],
+  "test": [
+    "2014J"
+  ],
+  "weeks": [
+    2,
+    4,
+    8,
+    12
+  ],
+  "models": [
+    "lr_main",
+    "gbm",
+    "lr_with_demographics"
+  ],
+  "note": "Paired bootstrap of recall@top-20%, same resamples for both models.",
+  "n_boot": 1000,
+  "by_week": {
+    "2": {
+      "gbm_recall": 0.3164,
+      "lr_main_recall": 0.3092,
+      "difference": 0.0072,
+      "difference_lo": -0.0003,
+      "difference_hi": 0.0154,
+      "share_of_resamples_gbm_ahead": 0.972
+    },
+    "4": {
+      "gbm_recall": 0.3619,
+      "lr_main_recall": 0.355,
+      "difference": 0.0069,
+      "difference_lo": 0.0006,
+      "difference_hi": 0.015,
+      "share_of_resamples_gbm_ahead": 0.986
+    },
+    "8": {
+      "gbm_recall": 0.4155,
+      "lr_main_recall": 0.4135,
+      "difference": 0.002,
+      "difference_lo": -0.003,
+      "difference_hi": 0.0097,
+      "share_of_resamples_gbm_ahead": 0.825
+    },
+    "12": {
+      "gbm_recall": 0.4454,
+      "lr_main_recall": 0.4496,
+      "difference": -0.0042,
+      "difference_lo": -0.0097,
+      "difference_hi": 0.0042,
+      "share_of_resamples_gbm_ahead": 0.231
+    }
+  }
+}

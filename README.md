@@ -13,8 +13,9 @@ Data: Open University Learning Analytics Dataset (OULAD), CC BY 4.0
 Done so far: data foundation (download with checksum, typed CSV-to-Parquet ingest, SQL data
 checks, day-keyed SQL views), a logistic regression baseline scored at weeks 2, 4, 8 and 12,
 and a gradient boosting challenger with calibration, per-student reasons, an evaluation gate
-and an MLflow model registry. The challenger did not pass the gate (see below).
-The fairness audit, deployment and monitoring are not built yet.
+and an MLflow model registry. The challenger did not pass the gate (see below). A fairness
+audit by student group and a model card ([`docs/model_card.md`](docs/model_card.md)) cover the
+model in use. Deployment and monitoring are not built yet.
 
 ## Baseline (logistic regression)
 Design: [`docs/design/day2-weekly-baseline.md`](docs/design/day2-weekly-baseline.md).
@@ -53,8 +54,8 @@ What this shows:
   and the gap grows as assessment results come in.
 - Adding demographics raises recall and precision a little at every week (compare the two
   model columns). The gain is largest at week 2 and small from week 4. The main model leaves
-  demographics out. Whether it treats groups fairly is checked separately (fairness audit, not
-  built yet).
+  demographics out. Whether it treats groups fairly is checked separately (see Fairness audit
+  and model card).
 - Between 0.3633 and 0.4165 of the 2014J cohort ended with Fail or Withdrawn (the "At risk"
   column), so a list of 20% of the cohort cannot reach most of them. Precision is the more
   telling number for an advisor.
@@ -167,6 +168,63 @@ Limits:
   repeated with the same settings. Every other output, including the gate result, came out
   identical, and only the ECE values and bin tables changed.
 
+## Fairness audit and model card
+Design: [`docs/design/day4-fairness-audit.md`](docs/design/day4-fairness-audit.md).
+Model card: [`docs/model_card.md`](docs/model_card.md).
+
+The audit asks whether the list reaches at-risk students equally across groups. It covers six
+attributes (gender, age band, region, highest education, IMD band, disability) and one
+combination (disability by IMD band), at every week, for `lr_main` (the model in use), the
+gradient boosting challenger (loaded from the MLflow registry, not refitted) and
+`lr_with_demographics`. The script stops if any model's 2014J metrics differ from the saved
+Day 2 and Day 3 reports. Nothing about any model was changed because of the audit.
+
+How it works:
+- Each module's top-20% list is built once over all its students, as an advisor gets it; each
+  student's flag is then counted in their group.
+- Per group: recall (the headline, "equal opportunity"), precision, calibration gap (mean
+  predicted minus observed risk) and ROC-AUC, with the group's size and at-risk rate.
+- 95% ranges from 1,000 bootstrap resamples of students within each module presentation, with
+  the lists rebuilt in each resample. The same resamples are used for every model, so model
+  differences are paired.
+- A group is flagged for review if its recall is below 0.8 or above 1.25 times the largest
+  group's and the range of the difference excludes 0, or if its calibration gap is over 0.05
+  with a range that excludes 0. Groups under 100 students or 30 at-risk students are labelled
+  small and not flagged. The rules were fixed before the first run.
+
+Main findings for `lr_main` at week 12 (`reports/fairness_groups.csv`):
+- At-risk women are reached less often than at-risk men: recall 0.4132 against 0.4742. The
+  difference's range excludes 0, but the ratio (0.8715) is inside the 0.8 rule. The same gap
+  appears at every week and in the gradient boosting model.
+- Recall is lowest where risk is rare: IMD band 90-100% (0.3618) and unknown IMD band
+  (0.3187), both flagged. At-risk disabled students are reached more often (0.5233 against
+  0.4398).
+- Many calibration flags at week 2 reflect the whole cohort being predicted too high
+  (gap 0.0621 for all students). Some groups sit well beyond that, and disabled students in
+  the most deprived IMD bands are predicted too low that week (see the model card).
+- Adding demographics as inputs (`lr_with_demographics`) widens the IMD and disability gaps for
+  about the same overall recall (it narrows the gender gap a little), which supports leaving
+  them out.
+
+The week-12 gate failure is also put in context: a paired bootstrap of gradient boosting minus
+`lr_main` recall gives -0.0042 with a 95% range of -0.0097 to 0.0042
+(`reports/model_gap_bootstrap.json`), so at week 12 the two models cannot be told apart on this
+data. The gate result stands.
+
+Outputs: `reports/fairness_report.md` (all tables), `reports/fairness_groups.csv`,
+`reports/fairness_intersectional.csv`, `reports/fairness_summary.json` (settings, flag counts,
+flagged groups) and `reports/model_gap_bootstrap.json`.
+
+Limits:
+- One test presentation, so the ranges cover the sampling of students, not change between years.
+- Many groups, weeks and models are compared, so some flags will appear by chance. Patterns
+  that repeat matter more than single flags.
+- The audit was run five times. The second run added an "All students" row to every table.
+  The third fixed the bootstrap, which drew different students on each run because the feature
+  query returned rows in no fixed order (the query now has a fixed order). Later runs changed
+  only the summary and the Markdown layout. Point values were the same in every run, and the
+  flag rules never changed. Details in the design note.
+
 ## Quickstart
 Needs [uv](https://docs.astral.sh/uv/).
 
@@ -178,6 +236,7 @@ uv run python scripts/run_checks.py       # reports/data_checks.json, reports/da
 uv run python scripts/train_baseline.py --mode test   # reports/baseline_metrics.json and others
 uv run python scripts/train_gbm.py --mode tune        # settings chosen on 2014B
 uv run python scripts/train_gbm.py --mode test        # 2014J once, gate, MLflow registry
+uv run python scripts/audit_fairness.py --mode test   # fairness audit, about 6 minutes
 uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs and models
 uv run pytest                             # runs on a small sample in tests/fixtures/
 ```
@@ -187,10 +246,11 @@ Optional: `uv run pre-commit install` runs ruff and a gitleaks secret scan befor
 ## Layout
 | Path | Contents |
 |---|---|
-| `src/early_warning/` | download, ingest, checks, views, features, metrics, baseline, gradient boosting, calibration, reasons, gate and registry code |
+| `src/early_warning/` | download, ingest, checks, views, features, metrics, baseline, gradient boosting, calibration, reasons, gate, registry and fairness audit code |
 | `sql/checks/` | one SQL file per data rule; each returns the rows that break it |
 | `sql/views/` | `student_module`, `vle_weekly`, `assessment_submissions` |
 | `sql/features/` | `student_week.sql`: one row per student at a prediction week |
 | `scripts/` | command-line entry points |
 | `reports/` | outputs of the scripts; every number quoted in the docs comes from here |
 | `docs/design/` | design notes |
+| `docs/model_card.md` | model card for the model in use |

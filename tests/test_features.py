@@ -170,3 +170,12 @@ def test_student_without_clicks_gets_zero(fcon):
     assert row.weeks_active == 0
     assert row.clicks_last_week == 0
     assert row.clicks_before_start == 0
+
+
+def test_rows_come_in_a_fixed_order(fcon):
+    # Calibration folds and the fairness bootstrap pick rows by position, so the order must
+    # not change between calls.
+    df = load_week(fcon, 8)
+    keys = ["code_presentation", "code_module", "id_student"]
+    assert df[keys].equals(df[keys].sort_values(keys).reset_index(drop=True))
+    assert df.equals(load_week(fcon, 8))

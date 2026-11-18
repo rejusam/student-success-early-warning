@@ -95,3 +95,5 @@ LEFT JOIN engagement AS e USING (code_module, code_presentation, id_student)
 LEFT JOIN due_counts AS dc USING (code_module, code_presentation)
 LEFT JOIN submitted AS sub USING (code_module, code_presentation, id_student)
 LEFT JOIN scores AS sc USING (code_module, code_presentation, id_student)
+-- A fixed row order, so anything that splits or samples rows by position is repeatable.
+ORDER BY code_presentation, code_module, id_student
