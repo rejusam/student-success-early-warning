@@ -2,8 +2,9 @@
 
 The tracking store is a local SQLite file by default (mlruns/mlflow.db, not in git). A hosted
 MLflow server only needs a different tracking URI. Each week's model is registered as
-early-warning-week-<k>. The alias "champion" marks the version that passed the gate and may
-be served; "challenger" marks one that did not.
+early-warning-week-<k>. The alias "champion" marks the version in use, the one that is
+served; "challenger" marks one that did not pass the gate. lr_main, the model in use from
+Day 2, is registered as champion by release.py (tag role=incumbent).
 """
 
 import subprocess
@@ -15,15 +16,16 @@ from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
 
 from early_warning.download import OULAD_SHA256
-from early_warning.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES
+from early_warning.features import model_input
 
 EXPERIMENT = "early-warning"
 
 # MLflow saves scikit-learn models with skops, which refuses to load any type not on an
-# allow-list (safer than pickle). These are the types inside our own model. Only models this
+# allow-list (safer than pickle). These are the types inside our own models. Only models this
 # project trained are loaded, so they are trusted here and nowhere else.
 TRUSTED_TYPES = [
     "early_warning.gbm.to_float",
+    "numpy.dtype",  # stored by the logistic regression pipeline (lr_main)
     "sklearn.calibration._CalibratedClassifier",
     "sklearn.calibration._SigmoidCalibration",
     "sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor",
@@ -55,25 +57,24 @@ def git_commit() -> str:
     return commit + ("-dirty" if dirty else "")
 
 
-def model_input(df: pd.DataFrame) -> pd.DataFrame:
-    """The columns the model reads, numeric ones as float (the serving input format)."""
-    out = df[NUMERIC_FEATURES + CATEGORICAL_FEATURES].copy()
-    out[NUMERIC_FEATURES] = out[NUMERIC_FEATURES].astype("float64")
-    return out
-
-
 def log_and_register(
     week: int,
     model,
     sample: pd.DataFrame,
     params: dict,
     metrics: dict,
-    passed: bool,
+    passed: bool | None,
     tracking_uri: str,
     artifact_dir: Path,
     report_files: list[Path] = (),
+    alias: str | None = None,
+    tags: dict | None = None,
 ) -> int:
-    """Log one weekly run, register the model and set its alias. Returns the version number."""
+    """Log one weekly run, register the model and set its alias. Returns the version number.
+
+    The alias is "champion" if the gate passed, "challenger" if not, unless one is given.
+    passed=None means no gate applies (the incumbent model), so no gate result is logged.
+    """
     mlflow.set_tracking_uri(tracking_uri)
     client = MlflowClient(tracking_uri=tracking_uri)
     if client.get_experiment_by_name(EXPERIMENT) is None:
@@ -83,10 +84,12 @@ def log_and_register(
     example = model_input(sample.head(5))
     signature = infer_signature(example, model.predict_proba(example)[:, 1])
     with mlflow.start_run(run_name=f"week-{week}"):
-        mlflow.set_tags({"week": week, "git_commit": git_commit(), "oulad_sha256": OULAD_SHA256})
+        run_tags = {"week": week, "git_commit": git_commit(), "oulad_sha256": OULAD_SHA256}
+        mlflow.set_tags({**run_tags, **(tags or {})})
         mlflow.log_params(params)
         mlflow.log_metrics(metrics)
-        mlflow.log_metric("gate_passed", int(passed))
+        if passed is not None:
+            mlflow.log_metric("gate_passed", int(passed))
         for path in report_files:
             mlflow.log_artifact(str(path), artifact_path="reports")
         info = mlflow.sklearn.log_model(
@@ -99,6 +102,6 @@ def log_and_register(
             registered_model_name=model_name(week),
         )
     version = int(info.registered_model_version)
-    alias = "champion" if passed else "challenger"
+    alias = alias or ("champion" if passed else "challenger")
     client.set_registered_model_alias(model_name(week), alias, str(version))
     return version

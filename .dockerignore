@@ -1,0 +1,8 @@
+# Send only what the image needs to the Docker build.
+*
+!pyproject.toml
+!uv.lock
+!src/
+!sql/
+!build/model/
+**/__pycache__

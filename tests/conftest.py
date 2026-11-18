@@ -21,3 +21,23 @@ def con(parquet_dir):
     register_tables(connection, parquet_dir)
     yield connection
     connection.close()
+
+
+@pytest.fixture(scope="session")
+def bundle_dir(parquet_dir, tmp_path_factory):
+    """A serving bundle released from the test sample (smoke mode)."""
+    from early_warning.release import main
+
+    out = tmp_path_factory.mktemp("release")
+    args = ["--mode", "smoke", "--processed", str(parquet_dir)]
+    main([*args, "--mlflow-dir", str(out / "ml"), "--bundle", str(out / "bundle")])
+    return out / "bundle"
+
+
+@pytest.fixture
+def frames(con):
+    from early_warning.features import WEEKS, load_week
+    from early_warning.views import create_views
+
+    create_views(con)
+    return {week: load_week(con, week) for week in WEEKS}

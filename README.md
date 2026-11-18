@@ -15,7 +15,10 @@ checks, day-keyed SQL views), a logistic regression baseline scored at weeks 2, 
 and a gradient boosting challenger with calibration, per-student reasons, an evaluation gate
 and an MLflow model registry. The challenger did not pass the gate (see below). A fairness
 audit by student group and a model card ([`docs/model_card.md`](docs/model_card.md)) cover the
-model in use. Deployment and monitoring are not built yet.
+model in use. The model in use is served as a weekly batch job and an API from one container
+image, with AWS infrastructure as code, keyless deployment from GitHub Actions and a retraining
+workflow that runs the gate and the fairness audit (see "Serving and deployment"). The AWS
+account is not set up yet, so nothing is live. Monitoring is not built yet.
 
 ## Baseline (logistic regression)
 Design: [`docs/design/day2-weekly-baseline.md`](docs/design/day2-weekly-baseline.md).
@@ -131,7 +134,7 @@ equal-size groups of students. Lower is better for both.
 | Week | ECE, boosting before / after Platt | ECE, `lr_main` | Brier, boosting after / `lr_main` |
 |---|---|---|---|
 | 2 | 0.0558 / 0.0539 | 0.0656 | 0.216 / 0.2239 |
-| 4 | 0.0592 / 0.0551 | 0.0686 | 0.2134 / 0.2197 |
+| 4 | 0.059 / 0.0549 | 0.0686 | 0.2134 / 0.2197 |
 | 8 | 0.051 / 0.0517 | 0.0342 | 0.1865 / 0.179 |
 | 12 | 0.0629 / 0.0516 | 0.0417 | 0.1747 / 0.1721 |
 
@@ -167,6 +170,12 @@ Limits:
   were not sorted by probability), which made the ECE values wrong. After the fix, the run was
   repeated with the same settings. Every other output, including the gate result, came out
   identical, and only the ECE values and bin tables changed.
+- The Day 5 reproducibility run changed the week-4 ECE (0.0592 to 0.059 before Platt scaling,
+  0.0551 to 0.0549 after) and some bin rates in `gbm_calibration.json` and
+  `gbm_validation.json`. At week 4 some students have exactly the same probability, and the
+  bins split such ties by row order. The feature query got a fixed row order on Day 4, after
+  these two files were written on Day 3. All other reports, the gate and the models came out
+  identical.
 
 ## Fairness audit and model card
 Design: [`docs/design/day4-fairness-audit.md`](docs/design/day4-fairness-audit.md).
@@ -225,6 +234,73 @@ Limits:
   only the summary and the Markdown layout. Point values were the same in every run, and the
   flag rules never changed. Details in the design note.
 
+## Serving and deployment
+Design: [`docs/design/day5-serving-deploy.md`](docs/design/day5-serving-deploy.md).
+Setup and teardown: [`docs/deploy.md`](docs/deploy.md).
+
+```
+retrain.yml (GitHub Actions, manual)
+  data checks -> baseline -> gradient boosting + gate -> fairness audit -> release
+  -> reports/ must come out unchanged
+  -> image: build, scan, push to ECR -> Terraform: Lambda + HTTP API -> call the live API
+  -> score.yml: risk lists from the live image -> private S3 bucket
+```
+
+**Release.** `scripts/release_model.py` registers `lr_main` in MLflow as `champion` for each
+week (fitted exactly as on Day 2; the gradient boosting models stay `challenger`), then copies
+the champion files into a bundle with a manifest of their SHA-256 hashes. It loads the bundle
+the way the service does, rescores 2014J and stops unless every number matches
+`reports/baseline_metrics.json`, so serving changes no model and no number. It also
+refuses a champion that is not a logistic regression, because the service explains scores with
+coefficients.
+
+**Reasons.** Each score comes with up to three reasons from the model's own coefficients:
+an input's push on the log-odds compared with an average training student (exact: the pushes
+plus the intercept give the model's output, and a test checks this). Inputs that move together
+are reported as one reason, because on their own their coefficients can point the wrong way:
+at week 8 total clicks has a small positive coefficient (0.099) while weeks active has a
+negative one (-0.4179) (`reports/baseline_coefficients.csv`), which would read as "more clicks
+raise the risk". Assessments due, submitted and missed are also one reason, since missed is
+always due minus submitted. The module is never a reason. Reasons read like these:
+- `submitted <n> of <m> assessments due so far`
+- `no assessment score yet`
+- `course-site activity so far: clicks <n>, active days <n>, clicks last week <n>`
+
+**Batch job.** `scripts/score_batch.py --week 12 --presentation 2014J` builds the cohort with
+the training feature query (data up to the cutoff day only) and writes one CSV per module: the
+top 20% by risk, with rank, student id, risk and reasons, and a manifest with the model version
+and counts. No outcome or demographic column is written.
+
+**API.** FastAPI (`src/early_warning/api.py`). `GET /health` gives the model versions;
+`POST /v1/score` takes a week and 1 to 500 students and returns risk and reasons. Pydantic
+rejects unknown fields (so demographic fields cannot reach the model), unknown modules, negative
+counts and counts that cannot occur together (for example missed not equal to due minus
+submitted, or a registration after the cutoff day). A test sends every row of the test-sample
+cohort, at every week, through the API, so the checks cannot reject rows the feature query
+makes, and the API's risks must equal the model's own. Example request:
+`docs/examples/score_request.json`.
+
+**Image.** Two-stage `Dockerfile`: locked runtime dependencies only (no MLflow, SHAP or dev
+tools), base images pinned by digest, a non-root user, read-only at run time. The AWS Lambda
+Web Adapter lets the same image run uvicorn locally and on Lambda. CI builds it with a bundle
+made from the test sample, calls both routes and the batch job, and scans it with Trivy.
+
+**AWS.** Terraform in two stacks. `infra/foundation` (applied once by a person) holds what is
+long-lived or sensitive: the GitHub OIDC provider, three roles, the ECR repository, the state
+and risk-list buckets (private, encrypted, HTTPS only, lists deleted after 90 days) and a budget
+alarm. `infra/service` (applied by the deploy job) holds the Lambda function and the rate-limited
+HTTP API. GitHub Actions signs in with OIDC, so there are no AWS keys anywhere; each job's role
+can do only that job, and each role trusts one GitHub environment (`production` for deploys,
+`scoring` for the lists). CI runs `terraform validate` and a Trivy misconfiguration scan;
+findings accepted on purpose are listed with reasons in `.trivyignore`.
+
+Limits:
+- Not deployed yet: it needs a new AWS account (`docs/deploy.md`). The deploy role's action
+  list has not been run against a live account.
+- The MLflow store in CI is a workflow artifact, not a shared server.
+- Each retraining run rescores 2014J with the fixed Day 2 to 4 settings. That checks that the
+  results reproduce; nothing is chosen from it, and the run fails if any report changes.
+
 ## Quickstart
 Needs [uv](https://docs.astral.sh/uv/).
 
@@ -237,6 +313,10 @@ uv run python scripts/train_baseline.py --mode test   # reports/baseline_metrics
 uv run python scripts/train_gbm.py --mode tune        # settings chosen on 2014B
 uv run python scripts/train_gbm.py --mode test        # 2014J once, gate, MLflow registry
 uv run python scripts/audit_fairness.py --mode test   # fairness audit, about 6 minutes
+uv run python scripts/release_model.py --mode test  # lr_main as champion, bundle in build/model
+uv run python scripts/score_batch.py --week 12 --presentation 2014J   # lists in build/risk-lists
+MODEL_DIR=build/model uv run uvicorn early_warning.api:create_app --factory --port 8080
+docker build -t early-warning . && docker run --rm -p 8080:8080 early-warning   # same API
 uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs and models
 uv run pytest                             # runs on a small sample in tests/fixtures/
 ```
@@ -246,7 +326,7 @@ Optional: `uv run pre-commit install` runs ruff and a gitleaks secret scan befor
 ## Layout
 | Path | Contents |
 |---|---|
-| `src/early_warning/` | download, ingest, checks, views, features, metrics, baseline, gradient boosting, calibration, reasons, gate, registry and fairness audit code |
+| `src/early_warning/` | download, ingest, checks, views, features, metrics, baseline, gradient boosting, calibration, reasons, gate, registry, fairness audit, release, scoring, API and batch code |
 | `sql/checks/` | one SQL file per data rule; each returns the rows that break it |
 | `sql/views/` | `student_module`, `vle_weekly`, `assessment_submissions` |
 | `sql/features/` | `student_week.sql`: one row per student at a prediction week |
@@ -254,3 +334,7 @@ Optional: `uv run pre-commit install` runs ruff and a gitleaks secret scan befor
 | `reports/` | outputs of the scripts; every number quoted in the docs comes from here |
 | `docs/design/` | design notes |
 | `docs/model_card.md` | model card for the model in use |
+| `docs/deploy.md` | AWS account setup, deployment and teardown |
+| `Dockerfile` | the image for the API and the batch job |
+| `infra/` | Terraform: `foundation` (once, by a person) and `service` (by the deploy job) |
+| `.github/workflows/` | `ci.yml` (tests, image, Terraform), `retrain.yml` (retrain, gate, audit, deploy), `score.yml` (weekly lists) |

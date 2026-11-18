@@ -18,7 +18,19 @@ from. Last updated 2026-11-18.
 - **Why this model and not the gradient boosting challenger:** a gradient boosting model was
   built on Day 3 and had to beat this model and a clicks-only ranking at weeks 4, 8 and 12 to
   replace it. It failed at week 12 (see Quantitative analyses), so it is registered in MLflow
-  as `challenger` and not used.
+  as `challenger` and not used. This model is registered as `champion` (tag `role=incumbent`)
+  in the same registered models, `early-warning-week-<k>` (`src/early_warning/release.py`).
+- **How it is served:** a weekly batch job writes each module's top-20% list with reasons, and
+  an API scores students sent to it. Both run the same container image, built from the
+  registered `champion` files, and the release step stops unless those files reproduce
+  `reports/baseline_metrics.json` exactly. Details: README, "Serving and deployment".
+- **Reasons given with each score:** up to three, from the model's own coefficients: each
+  input's push on the log-odds compared with an average training student, largest upward push
+  first (`src/early_warning/explain.py`). Inputs that move together are reported as one
+  reason: assessments due, submitted and missed; and the five course-site activity counts. On
+  their own their coefficients can point the wrong way (at week 8, total clicks +0.099 next
+  to weeks active -0.4179, `reports/baseline_coefficients.csv`), which would read as "more
+  clicks raise the risk". The module is never a reason.
 - **Built by:** Reju Sam John, as a portfolio project. Code: this repository. Licence: MIT.
 
 ## Intended use
@@ -242,6 +254,9 @@ demographics out of `lr_main` is the better choice on this evidence.
      (advisors, equity and disability services), with thresholds they set. Until then the
      audit reports but does not block a model.
   4. Rerun this audit at each retraining (`uv run python scripts/audit_fairness.py --mode
-     test`).
+     test`). The retraining workflow (`.github/workflows/retrain.yml`) does this before it
+     releases a model.
+- **Reasons are the model's, not causes.** A reason says which inputs raised this student's
+  score in this model. It does not say why the student is struggling.
 - **Out of scope here:** the student population of the University of Auckland differs from
   the Open University's. Nothing in this card has been checked on University of Auckland data.

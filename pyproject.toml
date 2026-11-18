@@ -6,20 +6,32 @@ authors = [{ name = "Reju Sam John" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
+# Runtime: what the scoring service and the batch job need. The Docker image installs only these.
 dependencies = [
     "duckdb>=1.1",
-    "mlflow>=3.6",
+    "fastapi>=0.163",
     "pandas>=3.1.1",
+    "pydantic>=2.14",
     "scikit-learn>=1.9.1",
-    "shap>=0.54",
+    "skops>=0.16",
+    "uvicorn>=0.54",
 ]
 
 [dependency-groups]
+# Training, registry and SHAP reasons. Installed by `uv sync` (see default-groups), not in the image.
+train = [
+    "mlflow>=3.6",
+    "shap>=0.54",
+]
 dev = [
+    "httpx>=0.28",
     "pytest>=8.3",
     "ruff>=0.7",
     "pre-commit>=4.0",
 ]
+
+[tool.uv]
+default-groups = ["dev", "train"]
 
 [build-system]
 requires = ["hatchling"]

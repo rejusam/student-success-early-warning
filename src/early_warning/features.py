@@ -72,3 +72,10 @@ def excluded_counts(con: duckdb.DuckDBPyConnection, week: int) -> dict[str, dict
         {"cutoff": cutoff_day(week)},
     ).fetchall()
     return {p: {"left_by_cutoff": left, "not_yet_registered": late} for p, left, late in rows}
+
+
+def model_input(df: pd.DataFrame) -> pd.DataFrame:
+    """The columns the model reads, numeric ones as float (the serving input format)."""
+    out = df[NUMERIC_FEATURES + CATEGORICAL_FEATURES].copy()
+    out[NUMERIC_FEATURES] = out[NUMERIC_FEATURES].astype("float64")
+    return out

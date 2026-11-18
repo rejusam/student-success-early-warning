@@ -1,0 +1,173 @@
+name: retrain
+
+# Reruns the whole chain on the full OULAD data: data checks, baseline, gradient boosting tuning
+# and test with the evaluation gate, fairness audit, and release of the champion model. If AWS
+# is set up (docs/deploy.md), it then deploys the released model and writes the risk lists.
+#
+# Manual only, because OULAD does not change: every run should reproduce reports/ exactly, and
+# the run fails if it does not. With new data each teaching period, a `schedule:` trigger would
+# start it, and the train and test presentations would move forward.
+
+on:
+  workflow_dispatch:
+    inputs:
+      week:
+        description: Prediction week for the risk lists
+        type: choice
+        options: ["2", "4", "8", "12"]
+        default: "12"
+      presentation:
+        description: Presentation to write risk lists for
+        type: string
+        default: 2014J
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retrain
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - run: uv sync --locked
+      - name: Cache the OULAD zip (its SHA-256 is checked on every run)
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: data/raw/oulad.zip
+          key: oulad-${{ hashFiles('src/early_warning/download.py') }}
+      - run: uv run python scripts/download_oulad.py
+      - run: uv run python scripts/ingest.py
+      - run: uv run python scripts/run_checks.py
+      - run: uv run python scripts/train_baseline.py --mode test
+      - run: uv run python scripts/train_gbm.py --mode tune
+      - name: Test the challenger on 2014J and apply the gate
+        # A failed gate is a normal result: the challenger is registered as `challenger` and the
+        # champion stays. The script exits 1 for it, so only other errors stop the job.
+        run: |
+          set +e
+          uv run python scripts/train_gbm.py --mode test | tee "$RUNNER_TEMP/gate.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ] && ! grep -q "gate failed" "$RUNNER_TEMP/gate.log"; then
+            exit "$status"
+          fi
+      - run: uv run python scripts/audit_fairness.py --mode test
+      - run: uv run python scripts/release_model.py --mode test
+      - name: Check that every report came out the same
+        run: |
+          git status --porcelain -- reports/
+          git diff --stat -- reports/
+          test -z "$(git status --porcelain -- reports/)"
+      - name: Summary
+        run: |
+          {
+            echo "### Evaluation gate (reports/gate.json)"
+            echo '```json'
+            jq '.gate' reports/gate.json
+            echo '```'
+            echo "### Released models (build/model/manifest.json)"
+            echo '```json'
+            jq '.weeks' build/model/manifest.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: model-bundle
+          path: build/model/
+          retention-days: 30
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: mlflow-store
+          path: mlruns/
+          retention-days: 30
+
+  deploy:
+    needs: train
+    if: vars.AWS_DEPLOY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      id-token: write  # lets the job ask GitHub for an OIDC token to sign in to AWS
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      REPOSITORY: ${{ vars.ECR_REPOSITORY_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: model-bundle
+          path: build/model/
+      - name: Build the image
+        # Lambda accepts a single-platform image manifest, so no provenance or SBOM index is
+        # attached here.
+        run: >-
+          docker buildx build --platform linux/amd64 --provenance=false --sbom=false --load
+          -t early-warning:release .
+      - name: Scan the image
+        run: >-
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock
+          aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+          early-warning:release
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Push to ECR
+        id: push
+        # Tags are immutable in ECR, so each run gets its own tag. Lambda runs the digest.
+        run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${REPOSITORY%%/*}"
+          tag="${GITHUB_SHA::12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker tag early-warning:release "$REPOSITORY:$tag"
+          docker push "$REPOSITORY:$tag"
+          digest=$(aws ecr describe-images --repository-name "${REPOSITORY#*/}" \
+            --image-ids imageTag="$tag" --query 'imageDetails[0].imageDigest' --output text)
+          echo "image=$REPOSITORY@$digest" >> "$GITHUB_OUTPUT"
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+      - name: Apply the service stack
+        id: apply
+        working-directory: infra/service
+        env:
+          IMAGE: ${{ steps.push.outputs.image }}
+          STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=$STATE_BUCKET" -backend-config="region=$AWS_REGION"
+          terraform apply -auto-approve -input=false \
+            -var "region=$AWS_REGION" -var "image_uri=$IMAGE"
+          echo "api_url=$(terraform output -raw api_url)" >> "$GITHUB_OUTPUT"
+      - name: Call the live API
+        env:
+          API_URL: ${{ steps.apply.outputs.api_url }}
+        run: |
+          for i in $(seq 1 10); do curl -sf "$API_URL/health" && break; sleep 5; done
+          curl -sf "$API_URL/health"
+          curl -sf -X POST "$API_URL/v1/score" -H 'Content-Type: application/json' \
+            -d @docs/examples/score_request.json
+          echo "Live API: $API_URL" >> "$GITHUB_STEP_SUMMARY"
+
+  score:
+    needs: deploy
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/score.yml
+    with:
+      week: ${{ inputs.week }}
+      presentation: ${{ inputs.presentation }}

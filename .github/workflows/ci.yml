@@ -34,3 +34,61 @@ jobs:
           docker run --rm -v "$PWD:/repo"
           ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
           git /repo --redact --verbose
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - run: uv sync --locked
+      - name: Release a model bundle from the test sample (smoke mode)
+        run: |
+          uv run python -c "from pathlib import Path; from early_warning.ingest import csv_to_parquet; csv_to_parquet(Path('tests/fixtures/oulad_sample'), Path('build/sample'))"
+          uv run python scripts/release_model.py --mode smoke --processed build/sample \
+            --mlflow-dir build/mlflow --bundle build/model
+      - run: docker build -t early-warning:ci .
+      - name: Run the image read-only and call both routes
+        run: |
+          docker run -d --name api --read-only --tmpfs /tmp -p 8080:8080 early-warning:ci
+          for i in $(seq 1 30); do curl -sf localhost:8080/health && break; sleep 1; done
+          curl -sf localhost:8080/health
+          curl -sf -X POST localhost:8080/v1/score -H 'Content-Type: application/json' \
+            -d @docs/examples/score_request.json
+          test "$(docker exec api id -u)" = 10001
+      - name: Run the batch job from the image
+        run: |
+          mkdir -p build/lists && chmod 777 build/lists
+          docker run --rm --read-only -v "$PWD/build/sample:/data:ro" -v "$PWD/build/lists:/out" \
+            early-warning:ci python -m early_warning.batch --processed /data --bundle /app/model \
+            --week 8 --presentation 2013J --out /out
+          ls build/lists/2013J/week-8
+      # Trivy v0.76.2 pinned by image digest. Fails on HIGH or CRITICAL issues that have a fix.
+      - run: >-
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock
+          aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1
+          early-warning:ci
+
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with:
+          terraform_version: 1.17.1
+      - run: terraform fmt -check -recursive infra
+      - name: Validate both stacks (no AWS credentials needed)
+        run: |
+          for stack in infra/foundation infra/service; do
+            terraform -chdir="$stack" init -backend=false -input=false
+            terraform -chdir="$stack" validate
+          done
+      # Misconfiguration scan; accepted findings and their reasons are in .trivyignore.
+      - run: >-
+          docker run --rm -v "$PWD:/repo" -w /repo
+          aquasec/trivy@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
+          config --skip-dirs '**/.terraform' --exit-code 1 .

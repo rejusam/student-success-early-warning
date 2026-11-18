@@ -1,0 +1,39 @@
+{
+  "week": 8,
+  "students": [
+    {
+      "id_student": 11391,
+      "code_module": "AAA",
+      "clicks_total": 529,
+      "clicks_last_week": 20,
+      "active_days_total": 18,
+      "weeks_active": 7,
+      "clicks_before_start": 98,
+      "n_due": 2,
+      "n_submitted": 2,
+      "n_missed": 0,
+      "n_late": 0,
+      "mean_score": 81.5,
+      "num_of_prev_attempts": 0,
+      "studied_credits": 240,
+      "date_registration": -159
+    },
+    {
+      "id_student": 28400,
+      "code_module": "AAA",
+      "clicks_total": 669,
+      "clicks_last_week": 23,
+      "active_days_total": 26,
+      "weeks_active": 7,
+      "clicks_before_start": 215,
+      "n_due": 2,
+      "n_submitted": 2,
+      "n_missed": 0,
+      "n_late": 1,
+      "mean_score": 69.0,
+      "num_of_prev_attempts": 0,
+      "studied_credits": 60,
+      "date_registration": -53
+    }
+  ]
+}

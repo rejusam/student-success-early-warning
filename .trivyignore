@@ -1,0 +1,18 @@
+# Trivy misconfiguration findings accepted on purpose, with the reason. Reviewed 2026-11-18.
+
+# S3 and ECR use AWS-managed encryption (SSE-S3, AES256) rather than a customer-managed KMS
+# key. The data is a public dataset (OULAD); a KMS key adds a monthly cost and key policy
+# to manage for no gain here. A university deployment with real student data would use one.
+AWS-0132
+AWS-0033
+
+# CloudWatch log groups are encrypted at rest by default with an AWS-managed key. The logs
+# hold no request bodies (see infra/service/main.tf).
+AWS-0017
+
+# S3 server access logging needs a third bucket. Who did what is already in CloudTrail,
+# which every AWS account has for management events.
+AWS-0089
+
+# X-Ray tracing is not needed for one function with one route that does the work.
+AWS-0066

@@ -1,0 +1,92 @@
+name: score
+
+# Writes the week's risk lists with the image that Lambda is running now, so the batch job and
+# the live API always use the same model and code. The lists go to the private risk-list bucket:
+#   s3://<bucket>/risk-lists/<presentation>/week-<k>/<module>.csv
+# Manual or called by retrain.yml. In use during a teaching period, a weekly `schedule:` trigger
+# would start it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      week:
+        description: Prediction week
+        type: choice
+        options: ["2", "4", "8", "12"]
+        default: "12"
+      presentation:
+        description: Presentation, for example 2014J
+        type: string
+        default: 2014J
+  workflow_call:
+    inputs:
+      week:
+        type: string
+        required: true
+      presentation:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  FUNCTION_NAME: ssew-api
+
+jobs:
+  score:
+    if: vars.AWS_SCORE_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: scoring  # its own environment, trusted only by the score role
+    permissions:
+      contents: read
+      id-token: write  # lets the job ask GitHub for an OIDC token to sign in to AWS
+    env:
+      WEEK: ${{ inputs.week }}
+      PRESENTATION: ${{ inputs.presentation }}
+      BUCKET: ${{ vars.RISK_LIST_BUCKET }}
+    steps:
+      - name: Check the inputs
+        run: |
+          [[ "$WEEK" =~ ^(2|4|8|12)$ ]] || { echo "week must be 2, 4, 8 or 12"; exit 1; }
+          [[ "$PRESENTATION" =~ ^20[0-9]{2}[BJ]$ ]] || { echo "presentation looks like 2014J"; exit 1; }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      - run: uv sync --locked --no-default-groups  # data preparation needs no training tools
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: data/raw/oulad.zip
+          key: oulad-${{ hashFiles('src/early_warning/download.py') }}
+      - run: uv run --no-sync python scripts/download_oulad.py
+      - run: uv run --no-sync python scripts/ingest.py
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_SCORE_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Pull the image Lambda is running
+        run: |
+          image=$(aws lambda get-function --function-name "$FUNCTION_NAME" \
+            --query 'Code.ResolvedImageUri' --output text)
+          aws ecr get-login-password | docker login --username AWS --password-stdin "${image%%/*}"
+          docker pull "$image"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+      - name: Write the risk lists
+        run: |
+          mkdir -p build/lists && chmod 777 build/lists  # the image runs as uid 10001
+          docker run --rm --read-only -v "$PWD/data/processed:/data:ro" -v "$PWD/build/lists:/out" \
+            "$IMAGE" python -m early_warning.batch --processed /data --bundle /app/model \
+            --week "$WEEK" --presentation "$PRESENTATION" --out /out
+      - name: Copy the lists to S3
+        run: aws s3 cp build/lists/ "s3://$BUCKET/risk-lists/" --recursive
+      - name: Summary
+        run: |
+          {
+            echo "### Risk lists, $PRESENTATION week $WEEK"
+            echo "Image: \`$IMAGE\`"
+            echo '```json'
+            jq '.modules' "build/lists/$PRESENTATION/week-$WEEK/manifest.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -12,3 +12,12 @@ __pycache__/
 .ruff_cache/
 mlruns/
 .DS_Store
+
+# Model bundle, risk lists and other local build outputs
+build/
+
+# Terraform: provider downloads, state and per-person settings stay local
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
