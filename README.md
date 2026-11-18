@@ -11,8 +11,10 @@ Data: Open University Learning Analytics Dataset (OULAD), CC BY 4.0
 
 ## Status
 Done so far: data foundation (download with checksum, typed CSV-to-Parquet ingest, SQL data
-checks, day-keyed SQL views) and a logistic regression baseline scored at weeks 2, 4, 8 and 12.
-Gradient boosting, the fairness audit, deployment and monitoring are not built yet.
+checks, day-keyed SQL views), a logistic regression baseline scored at weeks 2, 4, 8 and 12,
+and a gradient boosting challenger with calibration, per-student reasons, an evaluation gate
+and an MLflow model registry. The challenger did not pass the gate (see below).
+The fairness audit, deployment and monitoring are not built yet.
 
 ## Baseline (logistic regression)
 Design: [`docs/design/day2-weekly-baseline.md`](docs/design/day2-weekly-baseline.md).
@@ -69,6 +71,102 @@ Limits:
 - A development check (train 2013B and 2013J, score 2014B, `reports/dev_metrics.json`) was run
   first to catch pipeline errors. Nothing was changed after it.
 
+## Gradient boosting, calibration and the evaluation gate
+Design: [`docs/design/day3-gbm-gate-registry.md`](docs/design/day3-gbm-gate-registry.md).
+
+The challenger is scikit-learn's `HistGradientBoostingClassifier`, one model per week, on the
+same features and cohort as `lr_main` (no demographic fields). LightGBM and XGBoost were tried
+first. Both need a system OpenMP library on macOS that `uv sync` cannot install, and the
+scikit-learn model is the same histogram-based method with no extra system library.
+
+Steps, in order:
+1. **Tuning on 2014B, not 2014J.** Fit on 2013B and 2013J, try 12 settings (tree size,
+   minimum leaf size, L2 penalty) and pick the one and the number of trees with the lowest
+   log loss on 2014B. Chosen settings: `reports/gbm_tuning.json`. Log loss is used because
+   recall@top-20% is a step function that moves with a few students, so tuning on it would
+   fit noise. The test run reads the settings from that file and cannot tune.
+2. **Refit and calibrate.** Refit on 2013B, 2013J and 2014B. Probabilities are calibrated with
+   Platt scaling, learned from leave-one-presentation-out predictions (train on two
+   presentations, predict the third). Platt scaling only rescales the score, so every top-k
+   list is the same before and after calibration.
+3. **Score 2014J once and apply the gate.** The gate agreed on Day 2: recall@top-20% must be
+   strictly higher than both `lr_main` and `clicks_rank` at weeks 4, 8 and 12. The script
+   refits `lr_main` and `clicks_rank` in the same run and stops if they differ from
+   `reports/baseline_metrics.json` (they matched).
+4. **Register.** Each weekly model is logged to MLflow (local SQLite store in `mlruns/`, not in
+   git) with its settings, test metrics, git commit and data checksum, and registered as
+   `early-warning-week-<k>`. Alias `champion` if the gate passes, `challenger` if not. A failed
+   gate also makes the script exit with code 1, so a scheduled retraining job stops there.
+
+Validation on 2014B (`reports/gbm_validation.json`), recall@top-20%, before the test run:
+
+| Week | Gradient boosting | `lr_main` | `clicks_rank` |
+|---|---|---|---|
+| 2 | 0.3062 | 0.3013 | 0.2959 |
+| 4 | 0.3451 | 0.3451 | 0.3124 |
+| 8 | 0.3857 | 0.3896 | 0.3364 |
+| 12 | 0.4270 | 0.4263 | 0.3614 |
+
+Test on 2014J (`reports/gate.json`, week 2 from `reports/gbm_metrics.json`), recall@top-20%:
+
+| Week | Gradient boosting | `lr_main` | `clicks_rank` | Gate |
+|---|---|---|---|---|
+| 2 | 0.3164 | 0.3092 | 0.3139 | not gated |
+| 4 | 0.3619 | 0.3550 | 0.3302 | pass |
+| 8 | 0.4155 | 0.4135 | 0.3568 | pass |
+| 12 | 0.4454 | 0.4496 | 0.3754 | fail |
+
+**The gate failed at week 12**, so the gradient boosting models are registered as
+`challenger` and `lr_main` stays the model to use. Nothing was changed after the test run.
+On this data the two models are close: the gradient boosting model is a little ahead at
+weeks 2 to 8 and a little behind at week 12. The validation run was just as close, in a
+different pattern (ahead at weeks 2 and 12, level at week 4, behind at week 8). Both are well ahead of the clicks ranking from week 4. A model that is not
+clearly better does not justify losing the plain coefficients of the logistic regression.
+
+Calibration on 2014J (`reports/gbm_calibration.json`). Brier score is the mean squared error
+of the probabilities. ECE is the average gap between predicted and observed risk over ten
+equal-size groups of students. Lower is better for both.
+
+| Week | ECE, boosting before / after Platt | ECE, `lr_main` | Brier, boosting after / `lr_main` |
+|---|---|---|---|
+| 2 | 0.0558 / 0.0539 | 0.0656 | 0.216 / 0.2239 |
+| 4 | 0.0592 / 0.0551 | 0.0686 | 0.2134 / 0.2197 |
+| 8 | 0.051 / 0.0517 | 0.0342 | 0.1865 / 0.179 |
+| 12 | 0.0629 / 0.0516 | 0.0417 | 0.1747 / 0.1721 |
+
+Platt scaling lowered the boosting model's calibration error at weeks 2, 4 and 12, and left
+it about the same at week 8. `lr_main` is not recalibrated. Its error is lower than the
+calibrated boosting model's at weeks 8 and 12 and higher at weeks 2 and 4. Both models are
+off by about 3 to 7 percentage points on average, so a risk of "0.6" should be read as a
+rough level, not an exact chance.
+
+AUC. Day 2 reported AUC-PR over all modules pooled into one ranking, while the lists are per
+module. `reports/gbm_metrics.json` now has both: `metrics` (pooled, as before) and
+`per_module` (mean over module presentations). For example at week 12, AUC-PR pooled is
+0.7233 for gradient boosting and 0.7305 for `lr_main`. The per-module mean is 0.7441 and 0.7412.
+Pooled numbers mix in the differences in base rate between modules, so the per-module mean is
+the one that matches how advisors use the lists.
+
+**Reasons per student.** For each student, SHAP values give each feature's push on the
+gradient boosting model's risk score, and they add up exactly to the score (a test checks
+this). A student's reasons are the three features that push the risk up most, in plain words
+with the student's value. The module is never given as a reason. Example, the top 10 students
+of module AAA at week 8 of 2014J: `reports/example_risk_list.csv`. Mean absolute SHAP value per
+feature and week: `reports/gbm_shap_importance.csv`. At week 2 the largest are clicks last
+week and total clicks. From week 4 the average assessment score is the largest, followed by
+assessments due but not submitted.
+
+Limits:
+- One validation presentation and one test presentation, and no confidence intervals. The
+  week 12 gap that fails the gate is 0.0042 in recall. With differences this small, another
+  presentation could reverse the result.
+- MLflow runs locally. A shared tracking server comes with deployment.
+- The same marking-lag caveat as the baseline applies.
+- 2014J was scored twice by this model. The first run had a bug in the calibration bins (they
+  were not sorted by probability), which made the ECE values wrong. After the fix, the run was
+  repeated with the same settings. Every other output, including the gate result, came out
+  identical, and only the ECE values and bin tables changed.
+
 ## Quickstart
 Needs [uv](https://docs.astral.sh/uv/).
 
@@ -78,6 +176,9 @@ uv run python scripts/download_oulad.py   # data/raw/, checksum verified
 uv run python scripts/ingest.py           # data/processed/*.parquet
 uv run python scripts/run_checks.py       # reports/data_checks.json, reports/data_profile.json
 uv run python scripts/train_baseline.py --mode test   # reports/baseline_metrics.json and others
+uv run python scripts/train_gbm.py --mode tune        # settings chosen on 2014B
+uv run python scripts/train_gbm.py --mode test        # 2014J once, gate, MLflow registry
+uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs and models
 uv run pytest                             # runs on a small sample in tests/fixtures/
 ```
 
@@ -86,7 +187,7 @@ Optional: `uv run pre-commit install` runs ruff and a gitleaks secret scan befor
 ## Layout
 | Path | Contents |
 |---|---|
-| `src/early_warning/` | download, ingest, checks, views, features, metrics and baseline code |
+| `src/early_warning/` | download, ingest, checks, views, features, metrics, baseline, gradient boosting, calibration, reasons, gate and registry code |
 | `sql/checks/` | one SQL file per data rule; each returns the rows that break it |
 | `sql/views/` | `student_module`, `vle_weekly`, `assessment_submissions` |
 | `sql/features/` | `student_week.sql`: one row per student at a prediction week |

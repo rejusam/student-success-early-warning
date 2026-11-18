@@ -1,0 +1,11 @@
+code_module,code_presentation,id_student,risk,at_risk,reasons
+AAA,2014J,268733,0.9715,True,assessments due but not submitted: 2; no assessment score yet; weeks active so far: 1
+AAA,2014J,2429854,0.9683,True,assessments due but not submitted: 2; no assessment score yet; weeks active so far: 3
+AAA,2014J,288994,0.9679,True,assessments due but not submitted: 2; no assessment score yet; weeks active so far: 2
+AAA,2014J,111512,0.9635,True,assessments due but not submitted: 2; no assessment score yet; clicks last week: 0
+AAA,2014J,2168833,0.9597,True,average assessment score: 24; weeks active so far: 1; clicks last week: 0
+AAA,2014J,396655,0.9537,True,average assessment score: 19; assessments submitted so far: 1; assessments due so far: 2
+AAA,2014J,447481,0.9497,False,average assessment score: 27; weeks active so far: 4; assessments due so far: 2
+AAA,2014J,677281,0.9109,True,assessments due but not submitted: 2; no assessment score yet; assessments submitted so far: 0
+AAA,2014J,2606802,0.8992,True,average assessment score: 29; weeks active so far: 4; assessments submitted so far: 1
+AAA,2014J,24734,0.8957,False,average assessment score: 41; clicks last week: 0; assessments submitted so far: 1

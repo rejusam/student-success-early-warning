@@ -1,0 +1,40 @@
+{
+  "train": [
+    "2013B",
+    "2013J",
+    "2014B"
+  ],
+  "test": [
+    "2014J"
+  ],
+  "weeks": [
+    2,
+    4,
+    8,
+    12
+  ],
+  "gate": {
+    "rule": "gbm recall@top-20% must be strictly higher than lr_main and clicks_rank at weeks 4, 8, 12",
+    "weeks": {
+      "4": {
+        "gbm": 0.3619,
+        "lr_main": 0.355,
+        "clicks_rank": 0.3302,
+        "passed": true
+      },
+      "8": {
+        "gbm": 0.4155,
+        "lr_main": 0.4135,
+        "clicks_rank": 0.3568,
+        "passed": true
+      },
+      "12": {
+        "gbm": 0.4454,
+        "lr_main": 0.4496,
+        "clicks_rank": 0.3754,
+        "passed": false
+      }
+    },
+    "passed": false
+  }
+}

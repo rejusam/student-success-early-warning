@@ -60,3 +60,44 @@ def test_evaluate_keys():
     assert set(result) == {"n", "base_rate", "auc_pr", "roc_auc", "top_10", "top_20", "top_30"}
     assert result["n"] == 8
     assert result["base_rate"] == 0.5
+
+
+def test_per_module_auc_skips_single_class_groups():
+    from early_warning.metrics import per_module_auc
+
+    df = frame()
+    df.loc[df.code_module == "BBB", "at_risk"] = False  # BBB now has no one at risk
+    result = per_module_auc(df, "score")
+    assert result["n_modules"] == 1
+    # AAA scores 0.9, 0.8, 0.7, 0.1, 0.1 with at_risk T, F, T, F, T. Positive-negative pairs
+    # ranked right: (1,2) (1,4) (3,4) = 3, tie (5,4) = 0.5, wrong (5,2) = 0. 3.5 / 6.
+    assert result["roc_auc_module_mean"] == round(3.5 / 6, 4)
+
+
+def test_calibration_metrics_perfect_and_off():
+    from early_warning.metrics import calibration_metrics
+
+    y = pd.Series([0, 0, 1, 1] * 25)
+    perfect = calibration_metrics(y, pd.Series([0.5] * 100), n_bins=1)
+    assert perfect["ece"] == 0.0
+    assert perfect["brier"] == 0.25
+    off = calibration_metrics(y, pd.Series([0.9] * 100), n_bins=1)
+    assert off["ece"] == 0.4
+    assert off["bins"] == [{"n": 100, "mean_prob": 0.9, "rate": 0.5}]
+
+
+def test_calibration_bins_have_equal_size():
+    from early_warning.metrics import calibration_table
+
+    prob = pd.Series([i / 100 for i in range(100)])
+    table = calibration_table(pd.Series([0] * 100), prob, n_bins=10)
+    assert list(table.n) == [10] * 10
+    assert table.mean_prob.is_monotonic_increasing
+
+
+def test_calibration_bins_sort_by_probability_whatever_the_row_order():
+    from early_warning.metrics import calibration_table
+
+    table = calibration_table(pd.Series([1, 0, 1, 0]), pd.Series([0.9, 0.1, 0.8, 0.2]), n_bins=2)
+    assert list(table.mean_prob.round(4)) == [0.15, 0.85]
+    assert list(table.rate) == [0.0, 1.0]
