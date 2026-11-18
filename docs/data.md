@@ -37,7 +37,8 @@ The early-warning target is `at_risk = final_result IN ('Fail', 'Withdrawn')`
 ## Fields for the fairness audit
 `student_info` has `gender`, `region`, `highest_education`, `imd_band` (Index of Multiple
 Deprivation band), `age_band` and `disability`. They are used to check model performance by
-group. Whether they should also be model inputs is decided on Day 2.
+group. They are not inputs to the main model. A comparison model that adds them is reported
+next to it (`docs/design/day2-weekly-baseline.md`, decision 3).
 
 ## Data quirks found while checking
 - Missing values are written as `?` in the CSVs. Ingest reads them as NULL. Missing counts
@@ -65,6 +66,27 @@ group. Whether they should also be model inputs is decided on Day 2.
   the cutoff.
 - Banked assessments (`is_banked = 1`) carry a result from an earlier presentation, so their
   `days_late` has no meaning.
+
+## Module registrations per presentation and prediction cohorts
+From `reports/cohort_by_week.json`. Module registrations (one row per student per module
+presentation; a student can take more than one module) per presentation: 2013B 4,684;
+2013J 8,845; 2014B 7,804; 2014J 11,260.
+
+At week k a student is in the cohort unless they unregistered on or before day 7k - 1, or had
+not registered yet by then. Cohort size (and share at risk) per week:
+
+| Week | 2013B | 2013J | 2014B | 2014J (test) |
+|---|---|---|---|---|
+| 2 | 4,324 (0.5162) | 7,756 (0.4238) | 6,656 (0.4961) | 9,333 (0.4165) |
+| 4 | 4,127 (0.4929) | 7,684 (0.4179) | 6,510 (0.4843) | 9,214 (0.4079) |
+| 8 | 3,965 (0.4719) | 7,465 (0.4007) | 6,214 (0.4598) | 8,879 (0.3854) |
+| 12 | 3,822 (0.4519) | 7,313 (0.3882) | 6,023 (0.4425) | 8,571 (0.3633) |
+
+"B" presentations have a higher share at risk than "J" presentations in both years.
+
+Registrations left out of the 2014J cohort: 1,897 had unregistered and 30 had not registered
+yet at week 2; 2,688 had unregistered and 1 had not registered yet at week 12. Counts for every
+week and presentation are in the same file (`left_by_cutoff`, `not_yet_registered`).
 
 ## Data checks
 `sql/checks/` holds one SQL file per rule. Each returns the rows that break the rule. Results

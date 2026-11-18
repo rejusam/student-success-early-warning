@@ -1,0 +1,278 @@
+{
+  "note": "Development check on training presentations only. Not the test result.",
+  "train": [
+    "2013B",
+    "2013J"
+  ],
+  "test": [
+    "2014B"
+  ],
+  "weeks": [
+    2,
+    4,
+    8,
+    12
+  ],
+  "metrics": {
+    "2": {
+      "lr_main": {
+        "n": 6656,
+        "base_rate": 0.4961,
+        "auc_pr": 0.6759,
+        "roc_auc": 0.6884,
+        "top_10": {
+          "recall": 0.1587,
+          "precision": 0.7844,
+          "n_flagged": 668
+        },
+        "top_20": {
+          "recall": 0.3013,
+          "precision": 0.7464,
+          "n_flagged": 1333
+        },
+        "top_30": {
+          "recall": 0.4246,
+          "precision": 0.7014,
+          "n_flagged": 1999
+        }
+      },
+      "lr_with_demographics": {
+        "n": 6656,
+        "base_rate": 0.4961,
+        "auc_pr": 0.7005,
+        "roc_auc": 0.7112,
+        "top_10": {
+          "recall": 0.1663,
+          "precision": 0.8219,
+          "n_flagged": 668
+        },
+        "top_20": {
+          "recall": 0.311,
+          "precision": 0.7704,
+          "n_flagged": 1333
+        },
+        "top_30": {
+          "recall": 0.4406,
+          "precision": 0.7279,
+          "n_flagged": 1999
+        }
+      },
+      "clicks_rank": {
+        "n": 6656,
+        "base_rate": 0.4961,
+        "auc_pr": 0.6459,
+        "roc_auc": 0.6557,
+        "top_10": {
+          "recall": 0.162,
+          "precision": 0.8009,
+          "n_flagged": 668
+        },
+        "top_20": {
+          "recall": 0.2959,
+          "precision": 0.7329,
+          "n_flagged": 1333
+        },
+        "top_30": {
+          "recall": 0.4143,
+          "precision": 0.6843,
+          "n_flagged": 1999
+        }
+      }
+    },
+    "4": {
+      "lr_main": {
+        "n": 6510,
+        "base_rate": 0.4843,
+        "auc_pr": 0.7805,
+        "roc_auc": 0.7769,
+        "top_10": {
+          "recall": 0.1859,
+          "precision": 0.8988,
+          "n_flagged": 652
+        },
+        "top_20": {
+          "recall": 0.3451,
+          "precision": 0.835,
+          "n_flagged": 1303
+        },
+        "top_30": {
+          "recall": 0.4837,
+          "precision": 0.7801,
+          "n_flagged": 1955
+        }
+      },
+      "lr_with_demographics": {
+        "n": 6510,
+        "base_rate": 0.4843,
+        "auc_pr": 0.7906,
+        "roc_auc": 0.7894,
+        "top_10": {
+          "recall": 0.1859,
+          "precision": 0.8988,
+          "n_flagged": 652
+        },
+        "top_20": {
+          "recall": 0.3467,
+          "precision": 0.8388,
+          "n_flagged": 1303
+        },
+        "top_30": {
+          "recall": 0.4859,
+          "precision": 0.7836,
+          "n_flagged": 1955
+        }
+      },
+      "clicks_rank": {
+        "n": 6510,
+        "base_rate": 0.4843,
+        "auc_pr": 0.6336,
+        "roc_auc": 0.6507,
+        "top_10": {
+          "recall": 0.1735,
+          "precision": 0.839,
+          "n_flagged": 652
+        },
+        "top_20": {
+          "recall": 0.3124,
+          "precision": 0.7559,
+          "n_flagged": 1303
+        },
+        "top_30": {
+          "recall": 0.4364,
+          "precision": 0.7038,
+          "n_flagged": 1955
+        }
+      }
+    },
+    "8": {
+      "lr_main": {
+        "n": 6214,
+        "base_rate": 0.4598,
+        "auc_pr": 0.8144,
+        "roc_auc": 0.8129,
+        "top_10": {
+          "recall": 0.2048,
+          "precision": 0.9375,
+          "n_flagged": 624
+        },
+        "top_20": {
+          "recall": 0.3896,
+          "precision": 0.8933,
+          "n_flagged": 1246
+        },
+        "top_30": {
+          "recall": 0.5411,
+          "precision": 0.8281,
+          "n_flagged": 1867
+        }
+      },
+      "lr_with_demographics": {
+        "n": 6214,
+        "base_rate": 0.4598,
+        "auc_pr": 0.8212,
+        "roc_auc": 0.8225,
+        "top_10": {
+          "recall": 0.2044,
+          "precision": 0.9359,
+          "n_flagged": 624
+        },
+        "top_20": {
+          "recall": 0.3885,
+          "precision": 0.8909,
+          "n_flagged": 1246
+        },
+        "top_30": {
+          "recall": 0.5432,
+          "precision": 0.8313,
+          "n_flagged": 1867
+        }
+      },
+      "clicks_rank": {
+        "n": 6214,
+        "base_rate": 0.4598,
+        "auc_pr": 0.6442,
+        "roc_auc": 0.6741,
+        "top_10": {
+          "recall": 0.1953,
+          "precision": 0.8942,
+          "n_flagged": 624
+        },
+        "top_20": {
+          "recall": 0.3364,
+          "precision": 0.7713,
+          "n_flagged": 1246
+        },
+        "top_30": {
+          "recall": 0.4634,
+          "precision": 0.7092,
+          "n_flagged": 1867
+        }
+      }
+    },
+    "12": {
+      "lr_main": {
+        "n": 6023,
+        "base_rate": 0.4425,
+        "auc_pr": 0.8298,
+        "roc_auc": 0.8375,
+        "top_10": {
+          "recall": 0.2221,
+          "precision": 0.9785,
+          "n_flagged": 605
+        },
+        "top_20": {
+          "recall": 0.4263,
+          "precision": 0.9404,
+          "n_flagged": 1208
+        },
+        "top_30": {
+          "recall": 0.5842,
+          "precision": 0.8607,
+          "n_flagged": 1809
+        }
+      },
+      "lr_with_demographics": {
+        "n": 6023,
+        "base_rate": 0.4425,
+        "auc_pr": 0.8346,
+        "roc_auc": 0.844,
+        "top_10": {
+          "recall": 0.2229,
+          "precision": 0.9818,
+          "n_flagged": 605
+        },
+        "top_20": {
+          "recall": 0.4251,
+          "precision": 0.9379,
+          "n_flagged": 1208
+        },
+        "top_30": {
+          "recall": 0.5865,
+          "precision": 0.864,
+          "n_flagged": 1809
+        }
+      },
+      "clicks_rank": {
+        "n": 6023,
+        "base_rate": 0.4425,
+        "auc_pr": 0.6664,
+        "roc_auc": 0.6995,
+        "top_10": {
+          "recall": 0.212,
+          "precision": 0.9339,
+          "n_flagged": 605
+        },
+        "top_20": {
+          "recall": 0.3614,
+          "precision": 0.7972,
+          "n_flagged": 1208
+        },
+        "top_30": {
+          "recall": 0.4953,
+          "precision": 0.7297,
+          "n_flagged": 1809
+        }
+      }
+    }
+  }
+}

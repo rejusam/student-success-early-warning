@@ -1,0 +1,129 @@
+{
+  "note": "Single run on the held-out 2014J presentation.",
+  "train": [
+    "2013B",
+    "2013J",
+    "2014B"
+  ],
+  "test": [
+    "2014J"
+  ],
+  "weeks": [
+    2,
+    4,
+    8,
+    12
+  ],
+  "registrations_per_presentation": {
+    "2013B": 4684,
+    "2013J": 8845,
+    "2014B": 7804,
+    "2014J": 11260
+  },
+  "cohort_by_week": {
+    "2": {
+      "2013B": {
+        "n": 4324,
+        "base_rate": 0.5162,
+        "left_by_cutoff": 354,
+        "not_yet_registered": 6
+      },
+      "2013J": {
+        "n": 7756,
+        "base_rate": 0.4238,
+        "left_by_cutoff": 1079,
+        "not_yet_registered": 10
+      },
+      "2014B": {
+        "n": 6656,
+        "base_rate": 0.4961,
+        "left_by_cutoff": 1135,
+        "not_yet_registered": 13
+      },
+      "2014J": {
+        "n": 9333,
+        "base_rate": 0.4165,
+        "left_by_cutoff": 1897,
+        "not_yet_registered": 30
+      }
+    },
+    "4": {
+      "2013B": {
+        "n": 4127,
+        "base_rate": 0.4929,
+        "left_by_cutoff": 553,
+        "not_yet_registered": 4
+      },
+      "2013J": {
+        "n": 7684,
+        "base_rate": 0.4179,
+        "left_by_cutoff": 1158,
+        "not_yet_registered": 3
+      },
+      "2014B": {
+        "n": 6510,
+        "base_rate": 0.4843,
+        "left_by_cutoff": 1288,
+        "not_yet_registered": 6
+      },
+      "2014J": {
+        "n": 9214,
+        "base_rate": 0.4079,
+        "left_by_cutoff": 2041,
+        "not_yet_registered": 5
+      }
+    },
+    "8": {
+      "2013B": {
+        "n": 3965,
+        "base_rate": 0.4719,
+        "left_by_cutoff": 716,
+        "not_yet_registered": 3
+      },
+      "2013J": {
+        "n": 7465,
+        "base_rate": 0.4007,
+        "left_by_cutoff": 1379,
+        "not_yet_registered": 1
+      },
+      "2014B": {
+        "n": 6214,
+        "base_rate": 0.4598,
+        "left_by_cutoff": 1587,
+        "not_yet_registered": 3
+      },
+      "2014J": {
+        "n": 8879,
+        "base_rate": 0.3854,
+        "left_by_cutoff": 2379,
+        "not_yet_registered": 2
+      }
+    },
+    "12": {
+      "2013B": {
+        "n": 3822,
+        "base_rate": 0.4519,
+        "left_by_cutoff": 860,
+        "not_yet_registered": 2
+      },
+      "2013J": {
+        "n": 7313,
+        "base_rate": 0.3882,
+        "left_by_cutoff": 1531,
+        "not_yet_registered": 1
+      },
+      "2014B": {
+        "n": 6023,
+        "base_rate": 0.4425,
+        "left_by_cutoff": 1781,
+        "not_yet_registered": 0
+      },
+      "2014J": {
+        "n": 8571,
+        "base_rate": 0.3633,
+        "left_by_cutoff": 2688,
+        "not_yet_registered": 1
+      }
+    }
+  }
+}
