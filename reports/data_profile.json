@@ -1,0 +1,51 @@
+{
+  "row_counts": {
+    "courses": 22,
+    "assessments": 206,
+    "vle": 6364,
+    "student_info": 32593,
+    "student_registration": 32593,
+    "student_assessment": 173912,
+    "student_vle": 10655280
+  },
+  "missing_values": {
+    "courses": {},
+    "assessments": {
+      "date": 11
+    },
+    "vle": {
+      "week_from": 5243,
+      "week_to": 5243
+    },
+    "student_info": {
+      "imd_band": 1111
+    },
+    "student_registration": {
+      "date_registration": 45,
+      "date_unregistration": 22521
+    },
+    "student_assessment": {
+      "score": 173
+    },
+    "student_vle": {}
+  },
+  "final_result": {
+    "Distinction": 3024,
+    "Fail": 7052,
+    "Pass": 12361,
+    "Withdrawn": 10156
+  },
+  "student_vle_day_range": {
+    "first": -25,
+    "last": 269
+  },
+  "student_vle_repeated_student_site_day": 1614505,
+  "has_unregistration_date_by_final_result": {
+    "Distinction | no date": 3024,
+    "Fail | no date": 7043,
+    "Fail | has date": 9,
+    "Pass | no date": 12361,
+    "Withdrawn | no date": 93,
+    "Withdrawn | has date": 10063
+  }
+}

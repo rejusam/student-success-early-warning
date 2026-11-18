@@ -1,0 +1,13 @@
+{
+  "assessment_id_unique": 0,
+  "assessment_orphan_ids": 0,
+  "courses_key_unique": 0,
+  "final_result_allowed": 0,
+  "registration_key_unique": 0,
+  "registration_matches_info": 0,
+  "student_info_key_unique": 0,
+  "sum_click_positive": 0,
+  "vle_orphan_sites": 0,
+  "vle_orphan_students": 0,
+  "vle_site_unique": 0
+}

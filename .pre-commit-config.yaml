@@ -1,0 +1,19 @@
+# Runs on every commit after `uv run pre-commit install`. CI runs ruff and gitleaks separately.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: ef6cf06c079dd6b299dfc720b0f14400c9d168e1  # v0.17.5
+    hooks:
+      - id: ruff-check
+      - id: ruff-format
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # v8.30.1
+    hooks:
+      - id: gitleaks

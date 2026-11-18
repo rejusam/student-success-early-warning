@@ -1,0 +1,14 @@
+# Data is downloaded by scripts/download_oulad.py, never committed
+data/
+
+# Secrets and local environment
+.env
+.venv/
+
+# Tool caches and outputs
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+mlruns/
+.DS_Store
