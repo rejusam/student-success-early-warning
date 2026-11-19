@@ -1,6 +1,7 @@
 """Load the released model bundle and score students with it. Used by the API and the batch job.
 
-A bundle is a folder made by release.py: one week-<k>.skops file per prediction week and a
+A bundle is a folder made by release.py: one week-<k>.skops file per prediction week, a
+reference.json with the training cohort's profile for drift checks (drift.py), and a
 manifest.json with each file's SHA-256. Every file is checked against the manifest before it is
 loaded, and skops refuses any type that is not trusted by default or listed below.
 """
@@ -28,21 +29,37 @@ LIST_COLUMNS = [*GROUP, "week", "rank", "id_student", "risk", "reasons"]
 class Bundle:
     models: dict[int, Pipeline]
     manifest: dict
+    reference: dict
+
+
+def _checked(path: Path, sha256: str) -> Path:
+    if sha256_of(path) != sha256:
+        raise ValueError(f"{path.name} does not match its SHA-256 in manifest.json")
+    return path
 
 
 def load_bundle(directory: Path) -> Bundle:
-    """Read manifest.json, check each week's file against its SHA-256, and load the models."""
+    """Read manifest.json, check each file against its SHA-256, and load the models and the
+    drift reference."""
     manifest = json.loads((directory / "manifest.json").read_text())
     models = {}
     for week in WEEKS:
         entry = manifest["weeks"].get(str(week))
         if entry is None:
             raise ValueError(f"the bundle has no model for week {week}")
-        path = directory / entry["file"]
-        if sha256_of(path) != entry["sha256"]:
-            raise ValueError(f"{path.name} does not match its SHA-256 in manifest.json")
+        path = _checked(directory / entry["file"], entry["sha256"])
         models[week] = sio.load(path, trusted=TRUSTED_TYPES)
-    return Bundle(models=models, manifest=manifest)
+    if "reference" not in manifest:
+        raise ValueError("the bundle has no drift reference (release it again)")
+    entry = manifest["reference"]
+    reference = json.loads(_checked(directory / entry["file"], entry["sha256"]).read_text())
+    return Bundle(models=models, manifest=manifest, reference=reference)
+
+
+def predict_risk(bundle: Bundle, week: int, df: pd.DataFrame) -> pd.Series:
+    """Risk (probability of Fail or Withdrawn) for each row of df."""
+    risk = bundle.models[week].predict_proba(model_input(df))[:, 1]
+    return pd.Series(risk, index=df.index, name="risk")
 
 
 def score(bundle: Bundle, week: int, df: pd.DataFrame) -> pd.DataFrame:

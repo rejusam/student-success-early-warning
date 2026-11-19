@@ -1,7 +1,8 @@
 name: retrain
 
 # Reruns the whole chain on the full OULAD data: data checks, baseline, gradient boosting tuning
-# and test with the evaluation gate, fairness audit, and release of the champion model. If AWS
+# and test with the evaluation gate, fairness audit, release of the champion model and the
+# monitoring report. If AWS
 # is set up (docs/deploy.md), it then deploys the released model and writes the risk lists.
 #
 # Manual only, because OULAD does not change: every run should reproduce reports/ exactly, and
@@ -61,6 +62,7 @@ jobs:
           fi
       - run: uv run python scripts/audit_fairness.py --mode test
       - run: uv run python scripts/release_model.py --mode test
+      - run: uv run python scripts/monitor.py --mode test
       - name: Check that every report came out the same
         run: |
           git status --porcelain -- reports/
@@ -69,6 +71,11 @@ jobs:
       - name: Summary
         run: |
           {
+            echo "### Monitoring, 2014J (reports/monitoring.json)"
+            echo '```json'
+            jq '.weeks | map_values({drift: .drift.status, outcomes: .outcomes.status})' \
+              reports/monitoring.json
+            echo '```'
             echo "### Evaluation gate (reports/gate.json)"
             echo '```json'
             jq '.gate' reports/gate.json

@@ -17,8 +17,10 @@ and an MLflow model registry. The challenger did not pass the gate (see below). 
 audit by student group and a model card ([`docs/model_card.md`](docs/model_card.md)) cover the
 model in use. The model in use is served as a weekly batch job and an API from one container
 image, with AWS infrastructure as code, keyless deployment from GitHub Actions and a retraining
-workflow that runs the gate and the fairness audit (see "Serving and deployment"). The AWS
-account is not set up yet, so nothing is live. Monitoring is not built yet.
+workflow that runs the gate and the fairness audit (see "Serving and deployment"). Nothing is
+deployed on AWS yet, so nothing is live. Drift and performance monitoring runs next to every
+weekly list and as a report over the test presentation (see "Monitoring"). How this project
+differs from the 2025 notebook it replaces: [`docs/v1-to-v2.md`](docs/v1-to-v2.md).
 
 ## Baseline (logistic regression)
 Design: [`docs/design/day2-weekly-baseline.md`](docs/design/day2-weekly-baseline.md).
@@ -241,9 +243,9 @@ Setup and teardown: [`docs/deploy.md`](docs/deploy.md).
 ```
 retrain.yml (GitHub Actions, manual)
   data checks -> baseline -> gradient boosting + gate -> fairness audit -> release
-  -> reports/ must come out unchanged
+  -> monitoring report (drift + outcomes on 2014J) -> reports/ must come out unchanged
   -> image: build, scan, push to ECR -> Terraform: Lambda + HTTP API -> call the live API
-  -> score.yml: risk lists from the live image -> private S3 bucket
+  -> score.yml: risk lists + drift.json from the live image -> private S3 bucket
 ```
 
 **Release.** `scripts/release_model.py` registers `lr_main` in MLflow as `champion` for each
@@ -301,6 +303,75 @@ Limits:
 - Each retraining run rescores 2014J with the fixed Day 2 to 4 settings. That checks that the
   results reproduce; nothing is chosen from it, and the run fails if any report changes.
 
+## Monitoring
+Design: [`docs/design/day6-monitoring-freeze.md`](docs/design/day6-monitoring-freeze.md).
+
+Two questions, asked at different times:
+1. **Each week, before any outcome is known: do this cohort's inputs and risk scores look like
+   the training cohort's?** The release step saves, with the model, the training cohort's
+   profile at each week: decile bins of every input and of the model's own scores, with a bin
+   for missing values, and the share of modules. The batch job bins the new cohort the same
+   way and writes `drift.json` next to the lists: the Population Stability Index (PSI) of each
+   input and of the score. Bands: below 0.1 stable, 0.1 to 0.25 moderate, 0.25 or more major.
+   Status: `alert` if any PSI is major, `watch` if any is moderate. Drift never stops the job;
+   `score.yml` puts the status in the run summary and, on `alert`, raises a warning for a
+   person to review.
+   `drift.json` holds bin shares and means of the whole cohort, never a student row.
+2. **After the presentation ends: did the lists perform as expected?** Recall and precision of
+   the top-20% lists, at-risk rate and calibration, compared with the development check (the
+   same pipeline trained on 2013B and 2013J and scored on 2014B, `reports/dev_metrics.json`).
+   Status `alert` if recall falls below 0.9 times the expected value or if mean predicted
+   risk is more than 0.05 away from the observed rate.
+
+The thresholds and the action for each status were fixed before the first run.
+`scripts/monitor.py --mode test` runs both checks on 2014J, the presentation the released
+model has not seen, and the retraining workflow reruns it, so the report must reproduce.
+
+Results for 2014J (`reports/monitoring.json`, tables in `reports/monitoring_report.md`):
+
+| Week | Score PSI | Largest input PSI | Drift | Recall@20% (expected) | At-risk rate (expected) | Mean risk minus observed rate | Outcomes |
+|---|---|---|---|---|---|---|---|
+| 2 | 0.0108 | `n_due` 0.4534 | alert | 0.3092 (0.3013) | 0.4165 (0.4961) | 0.0621 | alert |
+| 4 | 0.0931 | `n_due` 0.4049 | alert | 0.355 (0.3451) | 0.4079 (0.4843) | 0.0335 | ok |
+| 8 | 0.0462 | `n_due` 2.5427 | alert | 0.4135 (0.3896) | 0.3854 (0.4598) | 0.0105 | ok |
+| 12 | 0.0184 | `n_due` 0.8704 | alert | 0.4496 (0.4263) | 0.3633 (0.4425) | 0.0391 | ok |
+
+What this shows:
+- **Drift raised an alert every week, and following it up finds a calendar change, not a
+  change in students.** The inputs that moved most are assessments due by the cutoff day
+  (`n_due`, major every week) and assessments submitted (`n_submitted`, major every week,
+  0.3075 to 0.718). `n_due` is set by each module's assessment calendar, and the report's
+  per-module table shows two calendars changed: by week 12, module BBB had 3.55 assessments
+  due on average in training and 2.0 in 2014J, and DDD 3.45 and 3.0. Total clicks stayed
+  stable (0.0075 to 0.0213). The average score was major at week 4 (0.2741) and moderate at
+  the other weeks, and the module mix was moderate every week (0.1966 to 0.2008). Three more
+  inputs were moderate in one week each: assessments missed at week 8 (0.1476), late
+  submissions at week 12 (0.176) and clicks in the last week at week 12 (0.1542). The full
+  table is in the report.
+- **The scores hardly moved** (score PSI 0.0108 to 0.0931, all stable), and the lists reached
+  more of the at-risk students than expected at every week. Because each module's list is its
+  top 20%, a shift in inputs changes who is ranked first, not how many are listed.
+- **Fewer students ended at risk in 2014J than in 2014B** (0.3633 against 0.4425 at week 12),
+  so precision is lower than expected at every week (0.8154 against 0.9404 at week 12) even
+  though recall is higher. Precision depends on how many at-risk students there are to find.
+- **The outcome alert is at week 2:** the model's mean risk was 0.0621 above the observed
+  rate, the same offset the fairness audit found for all students that week. By the rules this
+  asks for a retraining review; the model card's first recommendation (recalibrate on the
+  most recent presentation) is the matching fix. Nothing was changed here, because 2014J is
+  the test presentation.
+
+Limits:
+- One monitored presentation, so there is no record yet of how often each status fires in
+  normal years. The bands are the conventional ones, not tuned to this data.
+- `n_due` and `n_submitted` follow the assessment calendar, so as set up they raise an alert
+  whenever a module changes its calendar. A next version would check them within each module
+  against that module's own calendar. The rules were not changed after the first run.
+- PSI is computed over all modules together, so a change in the module mix also moves the
+  inputs that differ by module.
+- Expected values come from one development presentation (2014B), with no range.
+- Outcomes are known only after a presentation ends, so during a teaching period only the
+  drift check is available.
+
 ## Quickstart
 Needs [uv](https://docs.astral.sh/uv/).
 
@@ -314,7 +385,8 @@ uv run python scripts/train_gbm.py --mode tune        # settings chosen on 2014B
 uv run python scripts/train_gbm.py --mode test        # 2014J once, gate, MLflow registry
 uv run python scripts/audit_fairness.py --mode test   # fairness audit, about 6 minutes
 uv run python scripts/release_model.py --mode test  # lr_main as champion, bundle in build/model
-uv run python scripts/score_batch.py --week 12 --presentation 2014J   # lists in build/risk-lists
+uv run python scripts/monitor.py --mode test       # reports/monitoring.json, drift + outcomes
+uv run python scripts/score_batch.py --week 12 --presentation 2014J   # lists + drift.json in build/risk-lists
 MODEL_DIR=build/model uv run uvicorn early_warning.api:create_app --factory --port 8080
 docker build -t early-warning . && docker run --rm -p 8080:8080 early-warning   # same API
 uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db   # browse runs and models
@@ -326,7 +398,7 @@ Optional: `uv run pre-commit install` runs ruff and a gitleaks secret scan befor
 ## Layout
 | Path | Contents |
 |---|---|
-| `src/early_warning/` | download, ingest, checks, views, features, metrics, baseline, gradient boosting, calibration, reasons, gate, registry, fairness audit, release, scoring, API and batch code |
+| `src/early_warning/` | download, ingest, checks, views, features, metrics, baseline, gradient boosting, calibration, reasons, gate, registry, fairness audit, release, scoring, API, batch and monitoring code |
 | `sql/checks/` | one SQL file per data rule; each returns the rows that break it |
 | `sql/views/` | `student_module`, `vle_weekly`, `assessment_submissions` |
 | `sql/features/` | `student_week.sql`: one row per student at a prediction week |
@@ -334,6 +406,7 @@ Optional: `uv run pre-commit install` runs ruff and a gitleaks secret scan befor
 | `reports/` | outputs of the scripts; every number quoted in the docs comes from here |
 | `docs/design/` | design notes |
 | `docs/model_card.md` | model card for the model in use |
+| `docs/v1-to-v2.md` | what changed from the 2025 notebook this project replaces |
 | `docs/deploy.md` | AWS account setup, deployment and teardown |
 | `Dockerfile` | the image for the API and the batch job |
 | `infra/` | Terraform: `foundation` (once, by a person) and `service` (by the deploy job) |

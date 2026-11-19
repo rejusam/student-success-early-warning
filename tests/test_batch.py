@@ -29,6 +29,18 @@ def test_batch_writes_one_list_per_module(parquet_dir, bundle_dir, frames, tmp_p
         assert manifest["modules"][module] == {"cohort": n, "listed": len(listed)}
 
 
+def test_batch_writes_a_drift_report_without_student_rows(parquet_dir, bundle_dir, tmp_path):
+    run(parquet_dir, bundle_dir, tmp_path)
+    text = (tmp_path / "2013J" / "week-8" / "drift.json").read_text()
+    drift = json.loads(text)
+    # the smoke bundle was trained on the same 2013J students, so nothing has moved
+    assert drift["status"] == "ok"
+    assert drift["score"]["psi"] == 0
+    assert drift["n_current"] == drift["n_reference"]
+    for field in ("id_student", "at_risk", "gender", "disability"):
+        assert field not in text
+
+
 def test_unknown_presentation_stops_without_writing(parquet_dir, bundle_dir, tmp_path):
     with pytest.raises(SystemExit):
         run(parquet_dir, bundle_dir, tmp_path, presentation="2014X")

@@ -2,7 +2,7 @@
 
 Sections follow Mitchell et al. (2019), "Model Cards for Model Reporting"
 (https://arxiv.org/abs/1810.03993). Every number below names the file in `reports/` it comes
-from. Last updated 2026-11-18.
+from. Last updated 2026-11-19.
 
 ## Model details
 - **What it is:** four logistic regression models, one for each prediction week (2, 4, 8 and 12
@@ -108,6 +108,22 @@ equal-size groups of students).
 Between 0.3633 and 0.4165 of the cohort ended at risk, depending on the week, so a list of 20%
 of students cannot reach most of them. At week 2 the model does not beat a plain ranking by
 fewest clicks (recall 0.3139 for clicks, `reports/baseline_metrics.json`).
+
+### Monitoring on 2014J
+From `reports/monitoring.json` (method: README, "Monitoring"). Drift is measured against the
+training cohort at the same week; expected values come from the development check on 2014B.
+
+| Week | Score PSI | Drift status | Recall, top 20% (expected) | Mean risk minus observed rate | Outcome status |
+|---|---|---|---|---|---|
+| 2 | 0.0108 | alert | 0.3092 (0.3013) | 0.0621 | alert |
+| 4 | 0.0931 | alert | 0.355 (0.3451) | 0.0335 | ok |
+| 8 | 0.0462 | alert | 0.4135 (0.3896) | 0.0105 | ok |
+| 12 | 0.0184 | alert | 0.4496 (0.4263) | 0.0391 | ok |
+
+The drift alerts come from inputs set by the assessment calendar (assessments due and
+submitted), which changed in two modules; the scores stayed stable and recall was above the
+expected value at every week. The week-2 outcome alert is the same over-prediction as in the
+first recommendation below.
 
 ### The evaluation gate and the gradient boosting challenger
 Rule (agreed before the test run): the challenger's recall at the top 20% must be strictly
@@ -253,7 +269,10 @@ demographics out of `lr_main` is the better choice on this evidence.
   3. Agree a fairness check for the retraining pipeline with the people who own the decision
      (advisors, equity and disability services), with thresholds they set. Until then the
      audit reports but does not block a model.
-  4. Rerun this audit at each retraining (`uv run python scripts/audit_fairness.py --mode
+  4. Review `drift.json` with each weekly list and the monitoring report after each
+     presentation (`uv run python scripts/monitor.py --mode test`); an outcome alert starts a
+     retraining review, and nothing is retrained or promoted automatically.
+  5. Rerun this audit at each retraining (`uv run python scripts/audit_fairness.py --mode
      test`). The retraining workflow (`.github/workflows/retrain.yml`) does this before it
      releases a model.
 - **Reasons are the model's, not causes.** A reason says which inputs raised this student's

@@ -34,6 +34,18 @@ def test_release_registers_lr_main_as_champion_and_writes_bundle(parquet_dir, tm
     assert client.get_run(version.run_id).data.tags["model"] == "lr_main"
 
 
+def test_bundle_has_a_drift_reference_per_week(parquet_dir, frames, tmp_path):
+    release(parquet_dir, tmp_path)
+    bundle = tmp_path / "bundle"
+    manifest = json.loads((bundle / "manifest.json").read_text())
+    assert sha256_of(bundle / "reference.json") == manifest["reference"]["sha256"]
+    reference = json.loads((bundle / "reference.json").read_text())["weeks"]
+    assert sorted(reference) == sorted(str(w) for w in WEEKS)
+    # smoke mode trains on 2013J, the whole test sample
+    assert reference["8"]["n"] == len(frames[8][frames[8].code_presentation == "2013J"])
+    assert "id_student" not in (bundle / "reference.json").read_text()
+
+
 def test_second_release_adds_no_version(parquet_dir, tmp_path):
     release(parquet_dir, tmp_path)
     release(parquet_dir, tmp_path)
@@ -50,7 +62,7 @@ def test_gradient_boosting_champion_is_refused(con, tmp_path):
     uri = default_tracking_uri(tmp_path)
     log_and_register(2, model, df, {}, {}, passed=True, tracking_uri=uri, artifact_dir=tmp_path)
     with pytest.raises(ValueError, match="not a logistic regression"):
-        export_bundle(uri, tmp_path / "bundle")
+        export_bundle(uri, tmp_path / "bundle", {2: df})
 
 
 def test_smoke_refuses_the_real_registry(parquet_dir):

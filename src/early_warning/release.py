@@ -5,8 +5,10 @@ Steps, for each prediction week:
    test metrics against reports/baseline_metrics.json, and register it as champion
    (tag role=incumbent). An existing champion is left as it is, so a second run adds nothing.
 2. Download the champion's model file into a bundle folder, with a manifest.json that records
-   where it came from and its SHA-256. Only a logistic regression pipeline can be released,
-   because the service explains scores with the model's coefficients.
+   where it came from and its SHA-256. The bundle also gets reference.json: the training
+   cohort's profile of every input and of the model's scores, for drift checks (drift.py).
+   Only a logistic regression pipeline can be released, because the service explains scores
+   with the model's coefficients.
 3. Load the bundle the way the service does, rescore the test presentation, and stop if any
    metric differs from the expected ones. So the files that ship give the reported numbers.
 
@@ -33,7 +35,14 @@ from sklearn.pipeline import Pipeline
 
 from early_warning.baseline import build_pipeline
 from early_warning.download import OULAD_SHA256, sha256_of
-from early_warning.features import CATEGORICAL_FEATURES, NUMERIC_FEATURES, WEEKS, load_week
+from early_warning.drift import build_reference
+from early_warning.features import (
+    CATEGORICAL_FEATURES,
+    NUMERIC_FEATURES,
+    WEEKS,
+    load_week,
+    model_input,
+)
 from early_warning.gate import check_baseline_matches
 from early_warning.ingest import register_tables
 from early_warning.metrics import evaluate
@@ -127,12 +136,13 @@ def check_servable(path: Path, week: int) -> None:
         raise ValueError(refusal)
 
 
-def export_bundle(tracking_uri: str, out_dir: Path) -> dict:
-    """Copy each week's champion model file into out_dir and write manifest.json."""
+def export_bundle(tracking_uri: str, out_dir: Path, trains: dict[int, pd.DataFrame]) -> dict:
+    """Copy each week's champion model file into out_dir, write the drift reference from the
+    training cohorts (trains, one frame per week) and write manifest.json."""
     mlflow.set_tracking_uri(tracking_uri)
     client = MlflowClient(tracking_uri=tracking_uri)
     out_dir.mkdir(parents=True, exist_ok=True)
-    weeks = {}
+    weeks, references = {}, {}
     for week in WEEKS:
         version = champion_version(client, week)
         if version is None:
@@ -145,6 +155,9 @@ def export_bundle(tracking_uri: str, out_dir: Path) -> dict:
             check_servable(source, week)
             target = out_dir / f"week-{week}.skops"
             shutil.copyfile(source, target)
+        model = sio.load(target, trusted=TRUSTED_TYPES)
+        train_risk = model.predict_proba(model_input(trains[week]))[:, 1]
+        references[str(week)] = build_reference(trains[week], train_risk)
         run_tags = client.get_run(version.run_id).data.tags
         weeks[str(week)] = {
             "file": target.name,
@@ -155,6 +168,8 @@ def export_bundle(tracking_uri: str, out_dir: Path) -> dict:
             "role": run_tags.get("role", ""),
             "trained_at_commit": run_tags.get("git_commit", ""),
         }
+    reference = out_dir / "reference.json"
+    reference.write_text(json.dumps({"weeks": references}, indent=2) + "\n")
     manifest = {
         "released_at_commit": git_commit(),
         "oulad_sha256": OULAD_SHA256,
@@ -162,6 +177,7 @@ def export_bundle(tracking_uri: str, out_dir: Path) -> dict:
         "numeric_features": NUMERIC_FEATURES,
         "categorical_features": CATEGORICAL_FEATURES,
         "weeks": weeks,
+        "reference": {"file": reference.name, "sha256": sha256_of(reference)},
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
@@ -215,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
             week, trains[week], expected[week], tests[week], uri, args.mlflow_dir / "artifacts"
         )
         print(f"week {week}: champion is version {version}")
-    export_bundle(uri, args.bundle)
+    export_bundle(uri, args.bundle, trains)
     check_bundle(args.bundle, tests, expected)
     print(f"Wrote {args.bundle}: the released models reproduce the expected test metrics")
     return 0

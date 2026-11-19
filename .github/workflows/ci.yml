@@ -64,6 +64,7 @@ jobs:
             early-warning:ci python -m early_warning.batch --processed /data --bundle /app/model \
             --week 8 --presentation 2013J --out /out
           ls build/lists/2013J/week-8
+          jq -e '.status == "ok"' build/lists/2013J/week-8/drift.json
       # Trivy v0.76.2 pinned by image digest. Fails on HIGH or CRITICAL issues that have a fix.
       - run: >-
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock

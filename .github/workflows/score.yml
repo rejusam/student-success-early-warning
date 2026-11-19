@@ -1,7 +1,8 @@
 name: score
 
 # Writes the week's risk lists with the image that Lambda is running now, so the batch job and
-# the live API always use the same model and code. The lists go to the private risk-list bucket:
+# the live API always use the same model and code. The lists and a drift.json (drift against the
+# training cohort) go to the private risk-list bucket:
 #   s3://<bucket>/risk-lists/<presentation>/week-<k>/<module>.csv
 # Manual or called by retrain.yml. In use during a teaching period, a weekly `schedule:` trigger
 # would start it.
@@ -83,10 +84,27 @@ jobs:
         run: aws s3 cp build/lists/ "s3://$BUCKET/risk-lists/" --recursive
       - name: Summary
         run: |
+          folder="build/lists/$PRESENTATION/week-$WEEK"
           {
             echo "### Risk lists, $PRESENTATION week $WEEK"
             echo "Image: \`$IMAGE\`"
             echo '```json'
-            jq '.modules' "build/lists/$PRESENTATION/week-$WEEK/manifest.json"
+            jq '.modules' "$folder/manifest.json"
             echo '```'
+            if [ -f "$folder/drift.json" ]; then  # images released before Day 6 write none
+              echo "### Drift against the training cohort (drift.json)"
+              echo '```json'
+              jq '{status, score, largest_input, largest_input_psi: .inputs[.largest_input].psi}' \
+                "$folder/drift.json"
+              echo '```'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Flag drift for review
+        # Drift does not stop the job: advisors still get their lists. An alert puts a warning
+        # on the run for a person to review (actions in reports/monitoring_report.md); watch is
+        # shown in the summary only.
+        run: |
+          file="build/lists/$PRESENTATION/week-$WEEK/drift.json"
+          if [ -f "$file" ] && [ "$(jq -r .status "$file")" = "alert" ]; then
+            echo "::warning title=Drift alert::$PRESENTATION week $WEEK: see drift.json"
+          fi

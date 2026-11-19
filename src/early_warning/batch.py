@@ -5,6 +5,10 @@ training (only data up to the week's cutoff day), score it with the released bun
 one CSV per module, plus a manifest.json with the model versions and counts:
   <out>/<presentation>/week-<k>/<module>.csv
 Columns: code_module, code_presentation, week, rank, id_student, risk, reasons.
+
+It also writes drift.json: how far the cohort's inputs and risk scores have moved from the
+training cohort (drift.py). Drift never stops the job; advisors still get their lists, and the
+status (ok, watch, alert) is for a person to review.
 """
 
 import argparse
@@ -14,10 +18,23 @@ from pathlib import Path
 
 import duckdb
 
+from early_warning.drift import MAJOR, MODERATE, compare
 from early_warning.features import WEEKS, load_week
 from early_warning.ingest import register_tables
-from early_warning.scoring import LIST_FRACTION, load_bundle, risk_lists
+from early_warning.scoring import LIST_FRACTION, load_bundle, predict_risk, risk_lists
 from early_warning.views import create_views
+
+
+def drift_report(bundle, week: int, df) -> dict:
+    """Drift of one week's cohort against the released model's training cohort."""
+    result = compare(bundle.reference["weeks"][str(week)], df, predict_risk(bundle, week, df))
+    return {
+        "week": week,
+        "model_version": bundle.manifest["weeks"][str(week)]["version"],
+        "reference": "training cohort of the released model at the same week",
+        "psi_bands": {"moderate_from": MODERATE, "major_from": MAJOR},
+        **result,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -55,7 +72,10 @@ def main(argv: list[str] | None = None) -> int:
         "modules": counts,
     }
     (folder / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    print(f"Wrote {len(counts)} lists to {folder}")
+    drift = drift_report(bundle, args.week, df)
+    drift = {"presentation": args.presentation, **drift}
+    (folder / "drift.json").write_text(json.dumps(drift, indent=2) + "\n")
+    print(f"Wrote {len(counts)} lists to {folder}; drift status: {drift['status']}")
     return 0
 
 

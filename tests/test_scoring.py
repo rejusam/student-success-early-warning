@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from early_warning.features import DEMOGRAPHIC_FEATURES, WEEKS, model_input
-from early_warning.scoring import LIST_COLUMNS, load_bundle, risk_lists, score
+from early_warning.scoring import LIST_COLUMNS, load_bundle, predict_risk, risk_lists, score
 
 
 def test_bundle_loads_every_week(bundle_dir):
@@ -20,6 +20,21 @@ def test_changed_model_file_is_refused(bundle_dir, tmp_path):
         f.write(b"x")
     with pytest.raises(ValueError, match="SHA-256"):
         load_bundle(copy)
+
+
+def test_changed_drift_reference_is_refused(bundle_dir, tmp_path):
+    copy = tmp_path / "bundle"
+    shutil.copytree(bundle_dir, copy)
+    with open(copy / "reference.json", "a") as f:
+        f.write(" ")
+    with pytest.raises(ValueError, match="SHA-256"):
+        load_bundle(copy)
+
+
+def test_predict_risk_matches_score(bundle_dir, frames):
+    bundle = load_bundle(bundle_dir)
+    df = frames[4]
+    assert np.allclose(predict_risk(bundle, 4, df), score(bundle, 4, df)["risk"])
 
 
 def test_missing_week_is_refused(bundle_dir, tmp_path):
