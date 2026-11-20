@@ -37,12 +37,24 @@ Use an account that belongs to this project only, not one owned by an employer o
    On the Paid plan, IAM Identity Center with `aws configure sso` is the better choice.
 
 ## 2. Apply the foundation stack (once)
+Check which form of subject claim GitHub sends for this repository. The roles trust only
+tokens whose `sub` matches exactly:
+```bash
+gh api repos/OWNER/REPO/actions/oidc/customization/sub
+```
+If it shows `"use_immutable_subject": true`, the claim carries the owner and repository IDs,
+for example `repo:rejusam@6176357/student-success-early-warning@1462127690:environment:production`.
+Set `github_repository` in `terraform.tfvars` to the part after `repo:` in `sub_claim_prefix`
+(here `rejusam@6176357/student-success-early-warning@1462127690`). Otherwise the default
+`owner/name` form is right. A mismatch shows up in the deploy job as
+`Not authorized to perform sts:AssumeRoleWithWebIdentity`.
+
 Needs Terraform 1.17 (`brew install hashicorp/tap/terraform`, or the binary from
 https://developer.hashicorp.com/terraform/install).
 
 ```bash
 cd infra/foundation
-cp terraform.tfvars.example terraform.tfvars   # set budget_email; the file is not committed
+cp terraform.tfvars.example terraform.tfvars   # set budget_email (and github_repository, below); the file is not committed
 export AWS_PROFILE=ssew-admin
 terraform init
 terraform plan -out plan.tfplan     # read it: about 25 resources, nothing outside this project
@@ -94,7 +106,8 @@ aws s3 cp "s3://$(terraform -chdir=infra/foundation output -raw RISK_LIST_BUCKET
 
 ## If the first deploy fails with AccessDenied
 The deploy role lists only the actions this project needs. The list was written from the AWS
-documentation and has not yet been run against a live account. If a step fails with
+documentation. It worked unchanged on the first live deploy (21 November 2026), but AWS
+changes what some calls need. If a step fails with
 AccessDenied, the error names the missing action: add it to the matching statement in
 `infra/foundation/iam.tf`, run `terraform apply` there again, and rerun the job.
 

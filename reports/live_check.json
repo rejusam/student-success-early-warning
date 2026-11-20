@@ -1,0 +1,46 @@
+{
+  "checked_at_utc": "2026-11-20T22:55:44Z",
+  "deployed_by_run": "https://github.com/rejusam/student-success-early-warning/actions/runs/44808103126",
+  "api_url": "https://au3hc4ic73.execute-api.ap-southeast-2.amazonaws.com",
+  "region": "ap-southeast-2",
+  "health": {
+    "status_code": 200,
+    "body": {
+      "status": "ok",
+      "model_versions": {
+        "2": 2,
+        "4": 2,
+        "8": 2,
+        "12": 2
+      },
+      "released_at_commit": "754887582e3506cae32e1a22c78e73abee153b69"
+    }
+  },
+  "score": {
+    "request_file": "docs/examples/score_request.json",
+    "status_code": 200,
+    "body": {
+      "week": 8,
+      "model_version": 2,
+      "results": [
+        {
+          "id_student": 11391,
+          "risk": 0.0972,
+          "reasons": [
+            "credits being studied: 240",
+            "course-site activity so far: clicks 529, active days 18, clicks last week 20"
+          ]
+        },
+        {
+          "id_student": 28400,
+          "risk": 0.2383,
+          "reasons": [
+            "assessments submitted late: 1",
+            "average assessment score: 69",
+            "registration day (0 = module start): -53"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -11,7 +11,7 @@ variable "prefix" {
 }
 
 variable "github_repository" {
-  description = "owner/name of the GitHub repository allowed to use the roles."
+  description = "Repository part of the GitHub OIDC subject claim: owner/name, or owner@id/name@id when the repository uses immutable subjects (docs/deploy.md, step 2)."
   type        = string
   default     = "rejusam/student-success-early-warning"
 }

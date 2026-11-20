@@ -17,8 +17,10 @@ and an MLflow model registry. The challenger did not pass the gate (see below). 
 audit by student group and a model card ([`docs/model_card.md`](docs/model_card.md)) cover the
 model in use. The model in use is served as a weekly batch job and an API from one container
 image, with AWS infrastructure as code, keyless deployment from GitHub Actions and a retraining
-workflow that runs the gate and the fairness audit (see "Serving and deployment"). Nothing is
-deployed on AWS yet, so nothing is live. Drift and performance monitoring runs next to every
+workflow that runs the gate and the fairness audit (see "Serving and deployment"). It was
+deployed to AWS (ap-southeast-2) on 21 November 2026 by
+[retraining run 44808103126](https://github.com/rejusam/student-success-early-warning/actions/runs/44808103126);
+the live check is in `reports/live_check.json`. Drift and performance monitoring runs next to every
 weekly list and as a report over the test presentation (see "Monitoring"). How this project
 differs from the 2025 notebook it replaces: [`docs/v1-to-v2.md`](docs/v1-to-v2.md).
 
@@ -297,8 +299,12 @@ can do only that job, and each role trusts one GitHub environment (`production` 
 findings accepted on purpose are listed with reasons in `.trivyignore`.
 
 Limits:
-- Not deployed yet: it needs a new AWS account (`docs/deploy.md`). The deploy role's action
-  list has not been run against a live account.
+- Deployed once, from one retraining run. The first deploy job failed before any change was
+  made: the repository sends GitHub's immutable OIDC subject, which the roles did not yet
+  trust. After that was fixed in `terraform.tfvars` (`docs/deploy.md`, step 2), the rerun
+  passed with the deploy role's action list unchanged.
+- The live API is public and rate limited (5 requests a second); it serves the OULAD test
+  presentation, not real students.
 - The MLflow store in CI is a workflow artifact, not a shared server.
 - Each retraining run rescores 2014J with the fixed Day 2 to 4 settings. That checks that the
   results reproduce; nothing is chosen from it, and the run fails if any report changes.
