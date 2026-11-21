@@ -26,6 +26,8 @@ MAX_STUDENTS = 500
 # Upper bound well above anything in OULAD (largest click total per student and module: 24,139),
 # so a huge number gets a 422 rather than an overflow error later.
 Count = Field(ge=0, le=1_000_000)
+# OULAD student ids go up to 2,716,795, so the id gets its own, larger bound.
+StudentId = Field(ge=0, le=100_000_000)
 
 
 class Student(BaseModel):
@@ -36,7 +38,7 @@ class Student(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id_student: int = Count
+    id_student: int = StudentId
     code_module: MODULES
     clicks_total: int = Count
     clicks_last_week: int = Count

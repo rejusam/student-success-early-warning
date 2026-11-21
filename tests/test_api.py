@@ -65,6 +65,8 @@ def test_every_sample_row_is_accepted_and_scored_like_the_pipeline(client, frame
         {"code_module": "HHH"},  # not an OULAD module
         {"clicks_total": -1},
         {"clicks_total": 10**400},  # too large: must be a 422, not an overflow error
+        {"id_student": 10**400},
+        {"id_student": -1},
         {"mean_score": 101},
         {"n_missed": 99},  # must equal n_due - n_submitted
         {"date_registration": 500},  # registered after the week-8 cutoff day
@@ -73,6 +75,13 @@ def test_every_sample_row_is_accepted_and_scored_like_the_pipeline(client, frame
 )
 def test_bad_student_is_rejected(client, student, change):
     assert post(client, 8, [{**student, **change}]).status_code == 422
+
+
+def test_largest_oulad_student_id_is_accepted(client, student):
+    # OULAD ids go up to 2,716,795 (2014J), above the bound used for counts
+    response = post(client, 8, [{**student, "id_student": 2_716_795}])
+    assert response.status_code == 200, response.text
+    assert response.json()["results"][0]["id_student"] == 2_716_795
 
 
 def test_unknown_week_is_rejected(client, student):
