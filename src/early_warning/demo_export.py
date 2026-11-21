@@ -58,6 +58,10 @@ def module_file(week: int, module: str, rows: list[dict], scored: list[dict]) ->
     The first `listed` rows are the advisor's list (same rule as the batch job). Reasons are kept
     for the list and the students just below it; the rest of the cohort gets None to keep the
     file small.
+
+    Ranking uses the risk the API returns, rounded to 4 decimal places. The batch job ranks on
+    the unrounded probabilities, so when two students tie after rounding at the cut, the batch
+    list can hold a different one of them; check_against_s3 reports such cases.
     """
     by_id = {s["id_student"]: s for s in scored}
     if set(by_id) != {r["id_student"] for r in rows}:
@@ -104,8 +108,9 @@ def score_week(
 ) -> list[dict]:
     """Score rows through POST /v1/score, 500 students per call.
 
-    The pause keeps the calls under the API's throttle of 5 a second. A 429, a 5xx or a timeout
-    is retried after each wait in turn (five tries in all); then the export stops.
+    The pause keeps the calls under the API's throttle of 5 a second. A 429, a 5xx, a timeout
+    or a dropped connection is retried after each wait in turn (five tries in all); then the
+    export stops.
     """
     results = []
     for start in range(0, len(rows), MAX_STUDENTS):
@@ -126,8 +131,8 @@ def post_with_retry(client: httpx.Client, payload: dict, waits: tuple[float, ...
             time.sleep(waits[attempt - 1])
         try:
             response = client.post("/v1/score", json=payload, timeout=30)
-        except httpx.TimeoutException:
-            problem = "timeout"
+        except httpx.TransportError as e:  # timeouts and dropped connections
+            problem = type(e).__name__
             continue
         if response.status_code in RETRY_STATUS:
             problem = f"status {response.status_code}"
@@ -153,8 +158,11 @@ def fairness_value(path: Path, week: int, group: str, column: str) -> float:
     raise KeyError(f"{group} at week {week} not in {path}")
 
 
-def build_facts(repo: Path, meta: dict) -> dict:
-    """Every number the page's text uses, read from the file it comes from."""
+def build_facts(repo: Path, meta: dict, meta_path: str = "build/demo/meta.json") -> dict:
+    """Every number the page's text uses, read from the file it comes from.
+
+    Cohort sizes come from meta.json, which this export writes to meta_path.
+    """
     limits = json.loads((repo / "proxy/limits.json").read_text())
     tf = repo / "infra/service/variables.tf"
     metrics = json.loads((repo / "reports/baseline_metrics.json").read_text())["metrics"]
@@ -185,7 +193,7 @@ def build_facts(repo: Path, meta: dict) -> dict:
     sources["psi_major"] = ("src/early_warning/drift.py#MAJOR", MAJOR)
     for week, modules in meta["weeks"].items():
         total = sum(m["cohort"] for m in modules.values())
-        sources[f"cohort_w{week}"] = (f"data/meta.json#weeks.{week}", total)
+        sources[f"cohort_w{week}"] = (f"{meta_path}#weeks.{week}", total)
     for week, name in [(2, "w2"), (8, "w8")]:
         top = metrics[str(week)]["lr_main"]["top_20"]
         path = f"reports/baseline_metrics.json#metrics.{week}.lr_main.top_20"
@@ -211,8 +219,11 @@ def check_against_s3(out: Path, s3_dir: Path) -> dict:
     Per module: are the same ids listed, and are their risks equal to 4 decimal places? A tie
     in risk at the cut can list a different student; that is reported, not treated as an error.
     """
+    paths = sorted(s3_dir.glob("*.csv"))
+    if not paths:
+        raise ValueError(f"no CSV files in {s3_dir}; copy the week-12 lists from S3 first")
     modules = {}
-    for path in sorted(s3_dir.glob("*.csv")):
+    for path in paths:
         module = path.stem
         batch = {int(r["id_student"]): float(r["risk"]) for r in csv.DictReader(path.open())}
         export = json.loads((out / f"w12-{module}.json").read_text())
@@ -237,7 +248,7 @@ def check_against_s3(out: Path, s3_dir: Path) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Export 2014J, scored live, for the demo page.")
-    parser.add_argument("--api-url", required=True)
+    parser.add_argument("--api-url", help="the live API; needed unless --check-s3 is given")
     parser.add_argument("--processed", type=Path, default=Path("data/processed"))
     parser.add_argument("--out", type=Path, default=Path("build/demo"))
     parser.add_argument("--check-s3", type=Path, help="folder of week-12 CSVs copied from S3")
@@ -249,6 +260,8 @@ def main(argv: list[str] | None = None) -> int:
         (repo / "reports/demo_export_check.json").write_text(json.dumps(result, indent=2) + "\n")
         print(json.dumps(result["modules"], indent=2))
         return 0
+    if not args.api_url:
+        parser.error("--api-url is required to export")
 
     con = duckdb.connect()
     register_tables(con, args.processed)
@@ -256,7 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     frames = {week: load_week(con, week) for week in WEEKS}
     con.close()
 
-    args.out.mkdir(parents=True, exist_ok=True)
+    # Score everything before writing anything, so a failed run leaves no partial export.
+    files = {}
     with httpx.Client(base_url=args.api_url.rstrip("/")) as client:
         health = client.get("/health", timeout=30).raise_for_status().json()
         weeks = {}
@@ -266,8 +280,7 @@ def main(argv: list[str] | None = None) -> int:
             for module, part in df.groupby("code_module"):
                 rows = request_rows(part)
                 file = module_file(week, module, rows, score_week(client, week, rows))
-                path = args.out / f"w{week}-{module}.json"
-                path.write_text(json.dumps(file, separators=(",", ":")))
+                files[f"w{week}-{module}.json"] = file
                 weeks[str(week)][module] = {"cohort": file["cohort"], "listed": file["listed"]}
             print(f"week {week}: {sum(m['cohort'] for m in weeks[str(week)].values())} students")
 
@@ -279,6 +292,9 @@ def main(argv: list[str] | None = None) -> int:
         "list": f"top {LIST_FRACTION:.0%} of each module presentation by risk",
         "weeks": weeks,
     }
+    args.out.mkdir(parents=True, exist_ok=True)
+    for name, file in files.items():
+        (args.out / name).write_text(json.dumps(file, separators=(",", ":")))
     (args.out / "meta.json").write_text(json.dumps(meta, indent=2) + "\n")
     (args.out / "facts.json").write_text(json.dumps(build_facts(repo, meta), indent=2) + "\n")
     return 0

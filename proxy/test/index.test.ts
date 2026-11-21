@@ -111,6 +111,32 @@ describe('checks before AWS is called', () => {
   });
 });
 
+describe('streamed body', () => {
+  it('stops reading a chunked body once it passes the limit', async () => {
+    const fake = upstream(() => Response.json({}));
+    let pulled = 0;
+    const chunk = new TextEncoder().encode(' '.repeat(1024));
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1;
+        if (pulled > 1000) controller.close();
+        else controller.enqueue(chunk);
+      },
+    });
+    const request = new Request('https://proxy.example/v1/score', {
+      method: 'POST',
+      body: stream,
+      headers: { 'content-type': 'application/json' },
+      // @ts-expect-error duplex is needed for a stream body in Node's fetch
+      duplex: 'half',
+    });
+    const res = await worker.fetch(request, env());
+    expect(res.status).toBe(413);
+    expect(pulled).toBeLessThan(20);
+    expect(fake).not.toHaveBeenCalled();
+  });
+});
+
 describe('rate limits', () => {
   it('per-IP limit gives 429 with Retry-After and no AWS call', async () => {
     const fake = upstream(() => Response.json({}));

@@ -94,3 +94,100 @@ def test_facts_values_match_sources():
     assert value["recall_women_w12"] == 0.4132
     assert (value["psi_moderate"], value["psi_major"]) == (0.1, 0.25)
     assert all(v["source"] for v in facts.values())
+
+
+def test_retries_a_dropped_connection():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) < 3:
+            raise httpx.ConnectError("connection reset", request=request)
+        return answer(request)
+
+    assert len(fast(client(handler), 8, rows(2))) == 2
+    assert len(calls) == 3
+
+
+def test_failed_export_writes_no_module_files(tmp_path, monkeypatch):
+    import pandas as pd
+
+    from early_warning import demo_export
+
+    def frame(module, ids):
+        row = {f: 1 for f in demo_export.REQUEST_FIELDS}
+        return [
+            {**row, "id_student": i, "code_module": module, "code_presentation": "2014J"}
+            for i in ids
+        ]
+
+    data = pd.DataFrame(frame("AAA", range(5)) + frame("BBB", range(5, 10)))
+    monkeypatch.setattr(demo_export, "register_tables", lambda con, path: None)
+    monkeypatch.setattr(demo_export, "create_views", lambda con: None)
+    monkeypatch.setattr(demo_export, "load_week", lambda con, week: data)
+    monkeypatch.setattr(demo_export.time, "sleep", lambda s: None)
+
+    def handler(request):
+        if request.url.path == "/health":
+            return httpx.Response(200, json={"status": "ok"})
+        body = json.loads(request.content)
+        if body["students"][0]["code_module"] == "BBB":
+            return httpx.Response(400, json={"detail": "bad"})
+        return answer(request)
+
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        demo_export.httpx,
+        "Client",
+        lambda base_url: real_client(base_url=base_url, transport=httpx.MockTransport(handler)),
+    )
+    out = tmp_path / "demo"
+    with pytest.raises(RuntimeError, match="400"):
+        demo_export.main(["--api-url", "https://api.example", "--out", str(out)])
+    assert not list(out.glob("*.json"))
+
+
+def test_s3_check_refuses_an_empty_folder(tmp_path):
+    from early_warning.demo_export import main
+
+    empty = tmp_path / "s3"
+    empty.mkdir()
+    with pytest.raises(ValueError, match="no CSV"):
+        main(["--check-s3", str(empty), "--out", str(tmp_path)])
+
+
+def test_export_needs_api_url():
+    from early_warning.demo_export import main
+
+    with pytest.raises(SystemExit):
+        main([])
+
+
+def test_fact_sources_are_repo_files():
+    meta = {"weeks": {"2": {"AAA": {"cohort": 10, "listed": 2}}}}
+    facts = build_facts(REPO, meta, meta_path="build/demo/meta.json")
+    for key, fact in facts.items():
+        path = fact["source"].split("#")[0]
+        if key.startswith("cohort_"):
+            assert fact["source"] == "build/demo/meta.json#weeks.2"
+        else:
+            assert (REPO / path).is_file(), (key, path)
+
+
+def test_readme_limits_match_their_sources():
+    from early_warning.api import MAX_STUDENTS
+    from early_warning.demo_export import terraform_default
+
+    limits = json.loads((REPO / "proxy/limits.json").read_text())
+    rate = terraform_default(REPO / "infra/service/variables.tf", "throttle_rate")
+    readme = " ".join((REPO / "README.md").read_text().split())
+    proxy_readme = " ".join((REPO / "proxy/README.md").read_text().split())
+    assert (
+        f"at most {limits['max_students']} students and {limits['max_body_bytes']} bytes a call"
+        f" (the API allows {MAX_STUDENTS}), allows {limits['ip_per_minute']} calls a minute per"
+        f" address and {limits['upstream_per_minute']} a minute to AWS"
+    ) in readme
+    assert f"rate limited ({rate} requests a second)" in readme
+    assert f"at most {limits['max_body_bytes']} bytes" in proxy_readme
+    assert f"{limits['upstream_per_minute']} calls a minute to AWS" in proxy_readme
+    assert f"API throttle of {rate} a second" in proxy_readme
