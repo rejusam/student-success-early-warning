@@ -23,8 +23,8 @@ model in use. The model in use is served as a weekly batch job and an API from o
 image, with AWS infrastructure as code, keyless deployment from GitHub Actions and a retraining
 workflow that runs the gate and the fairness audit (see "Serving and deployment"). It was
 deployed to AWS (ap-southeast-2) on 21 November 2026 by
-[retraining run 44808103126](https://github.com/rejusam/student-success-early-warning/actions/runs/44808103126);
-the live check is in `reports/live_check.json`. Drift and performance monitoring runs next to every
+retraining run 44808103126 (GitHub Actions; the run history stays in the private development
+repository); the live check is in `reports/live_check.json`. Drift and performance monitoring runs next to every
 weekly list and as a report over the test presentation (see "Monitoring"). How this project
 differs from the 2025 notebook it replaces: [`docs/v1-to-v2.md`](docs/v1-to-v2.md).
 
@@ -321,7 +321,7 @@ Limits:
   was made: the repository sends GitHub's immutable OIDC subject, which the roles did not yet
   trust. After that was fixed in `terraform.tfvars` (`docs/deploy.md`, step 2), the rerun
   passed with the deploy role's action list unchanged. The second deploy, the same day
-  ([run 44857817860](https://github.com/rejusam/student-success-early-warning/actions/runs/44857817860)),
+  (run 44857817860),
   shipped an API fix: student ids above 1,000,000 had been rejected, though OULAD ids go
   higher, so some 2014J students could not be scored live. The run reproduced every report, so the model did not
   change.
