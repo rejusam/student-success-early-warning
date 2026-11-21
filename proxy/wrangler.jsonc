@@ -1,0 +1,37 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "ssew-proxy",
+	"main": "./src/index.ts",
+	"compatibility_date": "2026-11-01",
+	"workers_dev": true,
+	"preview_urls": false,
+	// The scoring API's address is public, so it is a plain variable, not a secret.
+	"vars": {
+		"AWS_API_URL": "https://au3hc4ic73.execute-api.ap-southeast-2.amazonaws.com"
+	},
+	// Limits match limits.json (test/config.test.ts checks this). Namespace ids only need to be
+	// distinct within this account's rate-limit bindings. Cloudflare documents these bindings as
+	// approximate and per location; the AWS throttle and budget alarm stay as the backstop.
+	"ratelimits": [
+		{
+			// Calls per IP address.
+			"name": "IP_LIMITER",
+			"namespace_id": "3001",
+			"simple": { "limit": 60, "period": 60 }
+		},
+		{
+			// Calls forwarded to AWS from all visitors, below the API throttle of 5 a second.
+			"name": "UPSTREAM_LIMITER",
+			"namespace_id": "3002",
+			"simple": { "limit": 240, "period": 60 }
+		}
+	],
+	// Invocation logs are off so request metadata such as client IP addresses is not stored; metrics and console errors remain.
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"invocation_logs": false
+		}
+	}
+}

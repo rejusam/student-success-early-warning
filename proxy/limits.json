@@ -1,0 +1,6 @@
+{
+  "max_students": 5,
+  "max_body_bytes": 8192,
+  "ip_per_minute": 60,
+  "upstream_per_minute": 240
+}

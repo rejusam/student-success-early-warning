@@ -9,6 +9,10 @@ Data: Open University Learning Analytics Dataset (OULAD), CC BY 4.0
 (Kuzilek, Hlosta & Zdrahal, 2015, https://doi.org/10.24432/C5KK69). Details, quirks and checks:
 [`docs/data.md`](docs/data.md).
 
+Live demo: https://rejusamjohn.pages.dev/early-warning/ (advisor lists, live scoring of any
+2014J student with what-if changes, and the deployment piece by piece). It calls the API
+through a small proxy, [`proxy/`](proxy/README.md).
+
 ## Status
 Done so far: data foundation (download with checksum, typed CSV-to-Parquet ingest, SQL data
 checks, day-keyed SQL views), a logistic regression baseline scored at weeks 2, 4, 8 and 12,
@@ -248,6 +252,10 @@ retrain.yml (GitHub Actions, manual)
   -> monitoring report (drift + outcomes on 2014J) -> reports/ must come out unchanged
   -> image: build, scan, push to ECR -> Terraform: Lambda + HTTP API -> call the live API
   -> score.yml: risk lists + drift.json from the live image -> private S3 bucket
+
+demo page (rejusamjohn.pages.dev/early-warning/)
+  -> proxy/ (Cloudflare Worker: input checks, rate limits) -> the same HTTP API
+  lists on the page: scripts/export_demo.py, 2014J scored once through the live API
 ```
 
 **Release.** `scripts/release_model.py` registers `lr_main` in MLflow as `champion` for each
@@ -298,11 +306,25 @@ can do only that job, and each role trusts one GitHub environment (`production` 
 `scoring` for the lists). CI runs `terraform validate` and a Trivy misconfiguration scan;
 findings accepted on purpose are listed with reasons in `.trivyignore`.
 
+**Proxy and demo page.** `proxy/` is a Cloudflare Worker in front of the API, so a public
+page and learners' `curl` or Python calls never reach AWS with unchecked input. It accepts
+JSON only, at most 5 students and 8192 bytes a call (the API allows 500), allows 60 calls a
+minute per address and 240 a minute to AWS in all, and stores nothing; the limits are in
+`proxy/limits.json` and the details in [`proxy/README.md`](proxy/README.md). The page's lists
+come from `scripts/export_demo.py`, which builds each week's 2014J cohort with the training
+feature query and scores it through the live API, so a risk in a list equals the risk the
+page gets when it scores the same student live. The numbers in the page's text are checked
+against `facts.json`, which the export reads from the files in this repository.
+
 Limits:
-- Deployed once, from one retraining run. The first deploy job failed before any change was
-  made: the repository sends GitHub's immutable OIDC subject, which the roles did not yet
+- Deployed twice, each time by a retraining run. The first deploy job failed before any change
+  was made: the repository sends GitHub's immutable OIDC subject, which the roles did not yet
   trust. After that was fixed in `terraform.tfvars` (`docs/deploy.md`, step 2), the rerun
-  passed with the deploy role's action list unchanged.
+  passed with the deploy role's action list unchanged. The second deploy, the same day
+  ([run 44857817860](https://github.com/rejusam/student-success-early-warning/actions/runs/44857817860)),
+  shipped an API fix: student ids above 1,000,000 had been rejected, though OULAD ids go
+  higher, so some 2014J students could not be scored live. The run reproduced every report, so the model did not
+  change.
 - The live API is public and rate limited (5 requests a second); it serves the OULAD test
   presentation, not real students.
 - The MLflow store in CI is a workflow artifact, not a shared server.
@@ -415,5 +437,6 @@ Optional: `uv run pre-commit install` runs ruff and a gitleaks secret scan befor
 | `docs/v1-to-v2.md` | what changed from the 2025 notebook this project replaces |
 | `docs/deploy.md` | AWS account setup, deployment and teardown |
 | `Dockerfile` | the image for the API and the batch job |
+| `proxy/` | Cloudflare Worker in front of the API for the demo page (TypeScript, vitest) |
 | `infra/` | Terraform: `foundation` (once, by a person) and `service` (by the deploy job) |
 | `.github/workflows/` | `ci.yml` (tests, image, Terraform), `retrain.yml` (retrain, gate, audit, deploy), `score.yml` (weekly lists) |

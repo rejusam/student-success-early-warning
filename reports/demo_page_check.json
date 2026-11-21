@@ -1,0 +1,93 @@
+{
+  "checked_on": "2026-11-21",
+  "proxy_url": "https://ssew-proxy.rejusamjohn.workers.dev",
+  "proxy_version_id": "2c7068cc-0c6e-4620-b71c-9ac4f659a855",
+  "api_health_via_proxy": {
+    "status": "ok",
+    "model_versions": {
+      "2": 2,
+      "4": 2,
+      "8": 2,
+      "12": 2
+    },
+    "released_at_commit": "feb773f6f874f4727368f3cf6c342377f2a50568"
+  },
+  "score_call": {
+    "request": {
+      "week": 8,
+      "students": [
+        {
+          "id_student": 396655,
+          "code_module": "AAA",
+          "clicks_total": 118,
+          "clicks_last_week": 7,
+          "active_days_total": 12,
+          "weeks_active": 6,
+          "clicks_before_start": 3,
+          "n_due": 2,
+          "n_submitted": 1,
+          "n_missed": 1,
+          "n_late": 1,
+          "mean_score": 19,
+          "num_of_prev_attempts": 0,
+          "studied_credits": 180,
+          "date_registration": -37
+        }
+      ]
+    },
+    "status": 200,
+    "response": {
+      "week": 8,
+      "model_version": 2,
+      "results": [
+        {
+          "id_student": 396655,
+          "risk": 0.9599,
+          "reasons": [
+            "average assessment score: 19",
+            "submitted 1 of 2 assessments due so far",
+            "assessments submitted late: 1"
+          ]
+        }
+      ]
+    },
+    "exported_risk": 0.9599
+  },
+  "proxy_checks": {
+    "six_students_rejected": "422 students must be a list of 1 to 5 students.",
+    "missing_week_rejected": "422 week must be 2, 4, 8 or 12.",
+    "text_plain_rejected": 415,
+    "get_on_score_rejected": 405,
+    "unknown_path": 404,
+    "student_id_2716795_scored": 200,
+    "preflight_from_other_origin_has_no_allow_origin": true
+  },
+  "local_page": {
+    "url": "http://localhost:5500/early-warning/",
+    "checks_passed": [
+      "week 8 AAA: 342 students, 69 on the list",
+      "first listed student 396655: live risk 0.9599 equals the list risk",
+      "what-if submitted 1 to 0: re-scored live, risk 0.8310 (down 0.1289)",
+      "same what-if again: served from this visit's memory, no call made",
+      "reset: back to 0.9599",
+      "student 268733 with no mean score: score box disabled at 0 submitted, 50 after raising submitted to 1, re-scored live 200",
+      "search for 99999999 and for text: not-in-cohort message",
+      "console: no errors from the page",
+      "390 px wide frame: page scroll width equals viewport width, list and record views",
+      "curl snippet from the page: 200, risk 0.9599",
+      "Python snippet from the page (requests 2.32.3): 200, risk 0.9599"
+    ]
+  },
+  "production_page": {
+    "url": "https://rejusamjohn.pages.dev/early-warning/",
+    "checks_passed": [
+      "content-security-policy connect-src includes https://ssew-proxy.rejusamjohn.workers.dev",
+      "first listed student 396655 (week 8 AAA): live call to the proxy 200, risk 0.9599 equals the list risk",
+      "what-if submitted 1 to 0: live 200, down 0.1289",
+      "same what-if again: from this visit's memory",
+      "search 268733: record opens, live risk equals the list risk (0.9457)",
+      "search 99999999: not-in-cohort message",
+      "console: no errors"
+    ]
+  }
+}
